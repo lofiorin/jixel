@@ -24,7 +24,11 @@ pub struct JxlImage {
 impl JxlImage {
     /// The first (for stills: the only) frame.
     pub fn into_first(self) -> Raster {
-        self.frames.into_iter().next().map(|f| f.raster).expect("decoder returns at least one frame")
+        self.frames
+            .into_iter()
+            .next()
+            .map(|f| f.raster)
+            .expect("decoder returns at least one frame")
     }
 }
 
@@ -78,7 +82,11 @@ impl JxlProbe {
 pub fn decode(bytes: &[u8]) -> Result<JxlImage> {
     let mut dec = Decoder::new(true)?;
     dec.subscribe(
-        sys::JXL_DEC_BASIC_INFO | sys::JXL_DEC_COLOR_ENCODING | sys::JXL_DEC_FRAME | sys::JXL_DEC_FULL_IMAGE | sys::JXL_DEC_BOX,
+        sys::JXL_DEC_BASIC_INFO
+            | sys::JXL_DEC_COLOR_ENCODING
+            | sys::JXL_DEC_FRAME
+            | sys::JXL_DEC_FULL_IMAGE
+            | sys::JXL_DEC_BOX,
     )?;
     dec.set_input(bytes, true)?;
     let mut frames = Vec::new();
@@ -89,12 +97,21 @@ pub fn decode(bytes: &[u8]) -> Result<JxlImage> {
             sys::JXL_DEC_COLOR_ENCODING => dec.choose_output_color()?,
             sys::JXL_DEC_FRAME => duration = dec.frame_duration_ms()?,
             sys::JXL_DEC_NEED_IMAGE_OUT_BUFFER => dec.allocate_pixels()?,
-            sys::JXL_DEC_FULL_IMAGE => frames.push(JxlFrame { raster: dec.take_raster()?, duration_ms: duration }),
+            sys::JXL_DEC_FULL_IMAGE => frames.push(JxlFrame {
+                raster: dec.take_raster()?,
+                duration_ms: duration,
+            }),
             sys::JXL_DEC_BOX => dec.on_box()?,
             sys::JXL_DEC_BOX_NEED_MORE_OUTPUT => dec.grow_box()?,
             sys::JXL_DEC_SUCCESS => break,
-            sys::JXL_DEC_NEED_MORE_INPUT => return Err(Error::Decode("the file is truncated".into())),
-            _ => return Err(Error::Decode("the file is not a valid JPEG XL image".into())),
+            sys::JXL_DEC_NEED_MORE_INPUT => {
+                return Err(Error::Decode("the file is truncated".into()))
+            }
+            _ => {
+                return Err(Error::Decode(
+                    "the file is not a valid JPEG XL image".into(),
+                ))
+            }
         }
     }
     dec.finish_box();
@@ -105,7 +122,11 @@ pub fn decode(bytes: &[u8]) -> Result<JxlImage> {
     for f in &mut frames {
         f.raster.metadata = metadata.clone();
     }
-    Ok(JxlImage { frames, loops: dec.loops, probe: std::mem::take(&mut dec.probe) })
+    Ok(JxlImage {
+        frames,
+        loops: dec.loops,
+        probe: std::mem::take(&mut dec.probe),
+    })
 }
 
 /// Decodes as much as possible from the first bytes of a file, the way a
@@ -129,10 +150,18 @@ pub fn decode_prefix(prefix: &[u8]) -> Result<Option<Raster>> {
                 }
                 // SAFETY: live decoder with an output buffer set.
                 let flushed = unsafe { sys::JxlDecoderFlushImage(dec.ptr) };
-                return if flushed == sys::JXL_DEC_SUCCESS { dec.take_raster().map(Some) } else { Ok(None) };
+                return if flushed == sys::JXL_DEC_SUCCESS {
+                    dec.take_raster().map(Some)
+                } else {
+                    Ok(None)
+                };
             }
             sys::JXL_DEC_SUCCESS => return Ok(None),
-            _ => return Err(Error::Decode("the file is not a valid JPEG XL image".into())),
+            _ => {
+                return Err(Error::Decode(
+                    "the file is not a valid JPEG XL image".into(),
+                ))
+            }
         }
     }
 }
@@ -158,7 +187,11 @@ pub fn reconstruct_jpeg(bytes: &[u8]) -> Result<Vec<u8>> {
                 sys::JXL_DEC_JPEG_NEED_MORE_OUTPUT => {
                     let used = jpeg.len() - sys::JxlDecoderReleaseJPEGBuffer(dec.ptr);
                     jpeg.resize(jpeg.len() * 2, 0);
-                    sys::JxlDecoderSetJPEGBuffer(dec.ptr, jpeg.as_mut_ptr().add(used), jpeg.len() - used);
+                    sys::JxlDecoderSetJPEGBuffer(
+                        dec.ptr,
+                        jpeg.as_mut_ptr().add(used),
+                        jpeg.len() - used,
+                    );
                 }
                 sys::JXL_DEC_FULL_IMAGE if started => {
                     let used = jpeg.len() - sys::JxlDecoderReleaseJPEGBuffer(dec.ptr);
@@ -166,10 +199,14 @@ pub fn reconstruct_jpeg(bytes: &[u8]) -> Result<Vec<u8>> {
                     return Ok(jpeg);
                 }
                 // Pixels were requested: there is no JPEG to restore.
-                sys::JXL_DEC_FULL_IMAGE | sys::JXL_DEC_NEED_IMAGE_OUT_BUFFER | sys::JXL_DEC_SUCCESS => {
-                    return Err(Error::NoJpegReconstruction)
+                sys::JXL_DEC_FULL_IMAGE
+                | sys::JXL_DEC_NEED_IMAGE_OUT_BUFFER
+                | sys::JXL_DEC_SUCCESS => return Err(Error::NoJpegReconstruction),
+                _ => {
+                    return Err(Error::Decode(
+                        "the file is not a valid JPEG XL image".into(),
+                    ))
                 }
-                _ => return Err(Error::Decode("the file is not a valid JPEG XL image".into())),
             }
         }
     }
@@ -178,7 +215,12 @@ pub fn reconstruct_jpeg(bytes: &[u8]) -> Result<Vec<u8>> {
 /// Reads image properties and container boxes without decoding pixels.
 pub fn probe(bytes: &[u8]) -> Result<JxlProbe> {
     let mut dec = Decoder::new(false)?;
-    dec.subscribe(sys::JXL_DEC_BASIC_INFO | sys::JXL_DEC_COLOR_ENCODING | sys::JXL_DEC_FRAME | sys::JXL_DEC_BOX)?;
+    dec.subscribe(
+        sys::JXL_DEC_BASIC_INFO
+            | sys::JXL_DEC_COLOR_ENCODING
+            | sys::JXL_DEC_FRAME
+            | sys::JXL_DEC_BOX,
+    )?;
     // Count stored frames (layers), not composited ones.
     // SAFETY: live decoder.
     unsafe { sys::JxlDecoderSetCoalescing(dec.ptr, sys::JXL_FALSE) };
@@ -191,8 +233,14 @@ pub fn probe(bytes: &[u8]) -> Result<JxlProbe> {
             sys::JXL_DEC_BOX => dec.on_box()?,
             sys::JXL_DEC_BOX_NEED_MORE_OUTPUT => dec.grow_box()?,
             sys::JXL_DEC_SUCCESS => break,
-            sys::JXL_DEC_NEED_MORE_INPUT => return Err(Error::Decode("the file is truncated".into())),
-            _ => return Err(Error::Decode("the file is not a valid JPEG XL image".into())),
+            sys::JXL_DEC_NEED_MORE_INPUT => {
+                return Err(Error::Decode("the file is truncated".into()))
+            }
+            _ => {
+                return Err(Error::Decode(
+                    "the file is not a valid JPEG XL image".into(),
+                ))
+            }
         }
     }
     Ok(std::mem::take(&mut dec.probe))
@@ -230,7 +278,9 @@ impl Decoder {
         let runner = Runner::new();
         if threads && !runner.as_ptr().is_null() {
             // SAFETY: live decoder and runner; the runner outlives the decoder.
-            unsafe { sys::JxlDecoderSetParallelRunner(ptr, sys::JxlThreadParallelRunner, runner.as_ptr()) };
+            unsafe {
+                sys::JxlDecoderSetParallelRunner(ptr, sys::JxlThreadParallelRunner, runner.as_ptr())
+            };
         }
         // SAFETY: live decoder. Return compressed (`brob`) boxes decompressed.
         unsafe { sys::JxlDecoderSetDecompressBoxes(ptr, sys::JXL_TRUE) };
@@ -259,7 +309,10 @@ impl Decoder {
     fn set_input(&mut self, bytes: &[u8], complete: bool) -> Result<()> {
         // SAFETY: live decoder; see the lifetime note above.
         unsafe {
-            ok(sys::JxlDecoderSetInput(self.ptr, bytes.as_ptr(), bytes.len()), "reading the file")?;
+            ok(
+                sys::JxlDecoderSetInput(self.ptr, bytes.as_ptr(), bytes.len()),
+                "reading the file",
+            )?;
             if complete {
                 sys::JxlDecoderCloseInput(self.ptr);
             }
@@ -276,7 +329,10 @@ impl Decoder {
         // SAFETY: called on the BASIC_INFO event, when the info is available.
         let info = unsafe {
             let mut info = MaybeUninit::uninit();
-            ok(sys::JxlDecoderGetBasicInfo(self.ptr, info.as_mut_ptr()), "reading image properties")?;
+            ok(
+                sys::JxlDecoderGetBasicInfo(self.ptr, info.as_mut_ptr()),
+                "reading image properties",
+            )?;
             info.assume_init()
         };
         let p = &mut self.probe;
@@ -302,8 +358,11 @@ impl Decoder {
         // SAFETY: called on the COLOR_ENCODING event.
         unsafe {
             let mut enc = MaybeUninit::<sys::JxlColorEncoding>::uninit();
-            let status =
-                sys::JxlDecoderGetColorAsEncodedProfile(self.ptr, sys::JXL_COLOR_PROFILE_TARGET_ORIGINAL, enc.as_mut_ptr());
+            let status = sys::JxlDecoderGetColorAsEncodedProfile(
+                self.ptr,
+                sys::JXL_COLOR_PROFILE_TARGET_ORIGINAL,
+                enc.as_mut_ptr(),
+            );
             self.probe.color_description = if status == sys::JXL_DEC_SUCCESS {
                 match enc.assume_init().transfer_function {
                     sys::JXL_TRANSFER_FUNCTION_SRGB => "sRGB".into(),
@@ -324,7 +383,9 @@ impl Decoder {
     /// records the ICC profile that describes the output pixels.
     fn choose_output_color(&mut self) -> Result<()> {
         self.describe_color();
-        let info = self.info.ok_or_else(|| Error::Decode("missing image properties".into()))?;
+        let info = self
+            .info
+            .ok_or_else(|| Error::Decode("missing image properties".into()))?;
         // SAFETY: called on the COLOR_ENCODING event, before buffers are set.
         unsafe {
             if info.uses_original_profile == 0 {
@@ -340,7 +401,12 @@ impl Decoder {
                 } else if let Some(icc) = self.read_icc(sys::JXL_COLOR_PROFILE_TARGET_ORIGINAL) {
                     // Arbitrary ICC profile: needs a colour management system.
                     sys::JxlDecoderSetCms(self.ptr, *sys::JxlGetDefaultCms());
-                    sys::JxlDecoderSetOutputColorProfile(self.ptr, std::ptr::null(), icc.as_ptr(), icc.len());
+                    sys::JxlDecoderSetOutputColorProfile(
+                        self.ptr,
+                        std::ptr::null(),
+                        icc.as_ptr(),
+                        icc.len(),
+                    );
                 }
             }
             self.icc = self.read_icc(sys::JXL_COLOR_PROFILE_TARGET_DATA);
@@ -352,32 +418,45 @@ impl Decoder {
         // SAFETY: called after the COLOR_ENCODING event.
         unsafe {
             let mut size = 0usize;
-            if sys::JxlDecoderGetICCProfileSize(self.ptr, target, &mut size) != sys::JXL_DEC_SUCCESS || size == 0 {
+            if sys::JxlDecoderGetICCProfileSize(self.ptr, target, &mut size) != sys::JXL_DEC_SUCCESS
+                || size == 0
+            {
                 return None;
             }
             let mut icc = vec![0u8; size];
-            (sys::JxlDecoderGetColorAsICCProfile(self.ptr, target, icc.as_mut_ptr(), size) == sys::JXL_DEC_SUCCESS)
+            (sys::JxlDecoderGetColorAsICCProfile(self.ptr, target, icc.as_mut_ptr(), size)
+                == sys::JXL_DEC_SUCCESS)
                 .then_some(icc)
         }
     }
 
     fn frame_duration_ms(&self) -> Result<u32> {
-        let info = self.info.ok_or_else(|| Error::Decode("missing image properties".into()))?;
+        let info = self
+            .info
+            .ok_or_else(|| Error::Decode("missing image properties".into()))?;
         // SAFETY: called on the FRAME event.
         let header = unsafe {
             let mut h = MaybeUninit::uninit();
-            ok(sys::JxlDecoderGetFrameHeader(self.ptr, h.as_mut_ptr()), "reading a frame")?;
+            ok(
+                sys::JxlDecoderGetFrameHeader(self.ptr, h.as_mut_ptr()),
+                "reading a frame",
+            )?;
             h.assume_init()
         };
         let a = info.animation;
         if a.tps_numerator == 0 {
             return Ok(0);
         }
-        Ok((header.duration as u64 * 1000 * a.tps_denominator as u64 / a.tps_numerator as u64) as u32)
+        Ok(
+            (header.duration as u64 * 1000 * a.tps_denominator as u64 / a.tps_numerator as u64)
+                as u32,
+        )
     }
 
     fn pixel_format(&self) -> Result<sys::JxlPixelFormat> {
-        let info = self.info.ok_or_else(|| Error::Decode("missing image properties".into()))?;
+        let info = self
+            .info
+            .ok_or_else(|| Error::Decode("missing image properties".into()))?;
         let channels = info.num_color_channels + u32::from(info.alpha_bits > 0);
         let data_type = if info.exponent_bits_per_sample > 0 {
             sys::JXL_TYPE_FLOAT
@@ -386,7 +465,12 @@ impl Decoder {
         } else {
             sys::JXL_TYPE_UINT16
         };
-        Ok(sys::JxlPixelFormat { num_channels: channels, data_type, endianness: sys::JXL_NATIVE_ENDIAN, align: 0 })
+        Ok(sys::JxlPixelFormat {
+            num_channels: channels,
+            data_type,
+            endianness: sys::JXL_NATIVE_ENDIAN,
+            align: 0,
+        })
     }
 
     fn allocate_pixels(&mut self) -> Result<()> {
@@ -395,7 +479,10 @@ impl Decoder {
         // `self.pixels` and is not moved or freed until the frame is taken.
         unsafe {
             let mut size = 0usize;
-            ok(sys::JxlDecoderImageOutBufferSize(self.ptr, &format, &mut size), "sizing the output")?;
+            ok(
+                sys::JxlDecoderImageOutBufferSize(self.ptr, &format, &mut size),
+                "sizing the output",
+            )?;
             let (pixels, ptr) = match format.data_type {
                 sys::JXL_TYPE_UINT8 => {
                     let mut v = vec![0u8; size];
@@ -415,12 +502,17 @@ impl Decoder {
             };
             // Moving a Vec into the enum does not move its heap buffer.
             self.pixels = Some(pixels);
-            ok(sys::JxlDecoderSetImageOutBuffer(self.ptr, &format, ptr, size), "setting the output")
+            ok(
+                sys::JxlDecoderSetImageOutBuffer(self.ptr, &format, ptr, size),
+                "setting the output",
+            )
         }
     }
 
     fn take_raster(&mut self) -> Result<Raster> {
-        let info = self.info.ok_or_else(|| Error::Decode("missing image properties".into()))?;
+        let info = self
+            .info
+            .ok_or_else(|| Error::Decode("missing image properties".into()))?;
         let format = self.pixel_format()?;
         let samples = match &self.pixels {
             Some(Pixels::U8(v)) => Samples::U8(v.clone()),
@@ -430,7 +522,11 @@ impl Decoder {
         };
         // libjxl applies the orientation by default, so the output may be
         // transposed relative to the stored size.
-        let (width, height) = if info.orientation > 4 { (info.ysize, info.xsize) } else { (info.xsize, info.ysize) };
+        let (width, height) = if info.orientation > 4 {
+            (info.ysize, info.xsize)
+        } else {
+            (info.xsize, info.ysize)
+        };
         Ok(Raster {
             width,
             height,
@@ -450,9 +546,16 @@ impl Decoder {
         self.finish_box();
         let mut t = [0 as std::ffi::c_char; 4];
         // SAFETY: called on the BOX event.
-        unsafe { ok(sys::JxlDecoderGetBoxType(self.ptr, t.as_mut_ptr(), sys::JXL_TRUE), "reading a box")? };
+        unsafe {
+            ok(
+                sys::JxlDecoderGetBoxType(self.ptr, t.as_mut_ptr(), sys::JXL_TRUE),
+                "reading a box",
+            )?
+        };
         let t = t.map(|c| c as u8);
-        self.probe.boxes.push(String::from_utf8_lossy(&t).into_owned());
+        self.probe
+            .boxes
+            .push(String::from_utf8_lossy(&t).into_owned());
         if &t == b"jbrd" {
             self.probe.jpeg_reconstruction = true;
         }
@@ -479,7 +582,9 @@ impl Decoder {
     }
 
     fn finish_box(&mut self) {
-        let Some((t, mut buf)) = self.current_box.take() else { return };
+        let Some((t, mut buf)) = self.current_box.take() else {
+            return;
+        };
         // SAFETY: releases the buffer set in `on_box` / `grow_box`.
         let unused = unsafe { sys::JxlDecoderReleaseBoxBuffer(self.ptr) };
         buf.truncate(buf.len() - unused);
@@ -490,7 +595,10 @@ impl Decoder {
     }
 
     fn metadata(&self) -> Metadata {
-        let mut m = Metadata { exif: self.exif.clone(), xmp: self.xmp.clone() };
+        let mut m = Metadata {
+            exif: self.exif.clone(),
+            xmp: self.xmp.clone(),
+        };
         // Pixels come out already rotated: keep EXIF consistent with them.
         m.reset_exif_orientation();
         m
@@ -509,6 +617,9 @@ fn ok(status: sys::JxlDecoderStatus, context: &'static str) -> Result<()> {
     if status == sys::JXL_DEC_SUCCESS {
         Ok(())
     } else {
-        Err(Error::Libjxl { context, code: status })
+        Err(Error::Libjxl {
+            context,
+            code: status,
+        })
     }
 }

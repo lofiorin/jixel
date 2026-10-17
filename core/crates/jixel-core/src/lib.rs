@@ -42,6 +42,9 @@ pub mod ops;
 pub mod raster;
 pub mod web;
 
+#[cfg(test)]
+pub(crate) mod test_support;
+
 pub use error::{Error, Result};
 pub use format::Format;
 pub use raster::{Raster, Samples};

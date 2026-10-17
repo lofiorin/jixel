@@ -67,7 +67,10 @@ pub struct Raster {
 impl Raster {
     /// Creates an 8-bit raster. Panics if `data` does not match the size.
     pub fn from_u8(width: u32, height: u32, channels: u8, data: Vec<u8>) -> Self {
-        assert_eq!(data.len(), width as usize * height as usize * channels as usize);
+        assert_eq!(
+            data.len(),
+            width as usize * height as usize * channels as usize
+        );
         Self {
             width,
             height,
@@ -112,26 +115,54 @@ impl Raster {
         let (w, h) = (self.width, self.height);
         let bad = || Error::InvalidInput("raster size does not match its samples".into());
         Ok(match (&self.samples, self.channels) {
-            (Samples::U8(v), 1) => DynamicImage::ImageLuma8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U8(v), 2) => DynamicImage::ImageLumaA8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U8(v), 3) => DynamicImage::ImageRgb8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U8(v), 4) => DynamicImage::ImageRgba8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U16(v), 1) => DynamicImage::ImageLuma16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U16(v), 2) => DynamicImage::ImageLumaA16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U16(v), 3) => DynamicImage::ImageRgb16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::U16(v), 4) => DynamicImage::ImageRgba16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::F32(v), 3) => DynamicImage::ImageRgb32F(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
-            (Samples::F32(v), 4) => DynamicImage::ImageRgba32F(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?),
+            (Samples::U8(v), 1) => {
+                DynamicImage::ImageLuma8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U8(v), 2) => {
+                DynamicImage::ImageLumaA8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U8(v), 3) => {
+                DynamicImage::ImageRgb8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U8(v), 4) => {
+                DynamicImage::ImageRgba8(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U16(v), 1) => {
+                DynamicImage::ImageLuma16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U16(v), 2) => {
+                DynamicImage::ImageLumaA16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U16(v), 3) => {
+                DynamicImage::ImageRgb16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::U16(v), 4) => {
+                DynamicImage::ImageRgba16(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::F32(v), 3) => {
+                DynamicImage::ImageRgb32F(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
+            (Samples::F32(v), 4) => {
+                DynamicImage::ImageRgba32F(ImageBuffer::from_raw(w, h, v.clone()).ok_or_else(bad)?)
+            }
             // `image` has no float gray types: expand gray to RGB.
             (Samples::F32(v), 1) => {
                 let rgb = v.iter().flat_map(|&g| [g, g, g]).collect();
                 DynamicImage::ImageRgb32F(ImageBuffer::from_raw(w, h, rgb).ok_or_else(bad)?)
             }
             (Samples::F32(v), 2) => {
-                let rgba = v.chunks_exact(2).flat_map(|p| [p[0], p[0], p[0], p[1]]).collect();
+                let rgba = v
+                    .chunks_exact(2)
+                    .flat_map(|p| [p[0], p[0], p[0], p[1]])
+                    .collect();
                 DynamicImage::ImageRgba32F(ImageBuffer::from_raw(w, h, rgba).ok_or_else(bad)?)
             }
-            _ => return Err(Error::InvalidInput(format!("unsupported channel count {}", self.channels))),
+            _ => {
+                return Err(Error::InvalidInput(format!(
+                    "unsupported channel count {}",
+                    self.channels
+                )))
+            }
         })
     }
 

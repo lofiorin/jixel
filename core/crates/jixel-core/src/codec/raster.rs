@@ -10,7 +10,10 @@ use image::codecs::gif::{GifDecoder, GifEncoder, Repeat};
 use image::codecs::jpeg::JpegEncoder;
 use image::codecs::png::{CompressionType, FilterType, PngDecoder, PngEncoder};
 use image::codecs::webp::WebPDecoder;
-use image::{AnimationDecoder, Delay, DynamicImage, Frame, ImageDecoder, ImageEncoder, ImageFormat, ImageReader};
+use image::{
+    AnimationDecoder, Delay, DynamicImage, Frame, ImageDecoder, ImageEncoder, ImageFormat,
+    ImageReader,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::metadata::{Metadata, MetadataPolicy};
@@ -40,7 +43,11 @@ pub fn decode(bytes: &[u8], format: Format) -> Result<Raster> {
     let mut decoder = ImageReader::with_format(Cursor::new(bytes), fmt).into_decoder()?;
     // Metadata is optional: a broken EXIF block must not prevent decoding.
     let icc = decoder.icc_profile().ok().flatten();
-    let exif = decoder.exif_metadata().ok().flatten().and_then(|e| Metadata::from_exif_any(&e));
+    let exif = decoder
+        .exif_metadata()
+        .ok()
+        .flatten()
+        .and_then(|e| Metadata::from_exif_any(&e));
     let xmp = decoder.xmp_metadata().ok().flatten();
     let orientation = decoder.orientation().map(|o| o.to_exif()).unwrap_or(1);
     let img = DynamicImage::from_decoder(decoder)?;
@@ -63,7 +70,9 @@ pub struct Animation {
 /// still images (including single-frame GIFs).
 pub fn decode_animation(bytes: &[u8], format: Format) -> Result<Option<Animation>> {
     let frames = match format {
-        Format::Gif => GifDecoder::new(Cursor::new(bytes))?.into_frames().collect_frames()?,
+        Format::Gif => GifDecoder::new(Cursor::new(bytes))?
+            .into_frames()
+            .collect_frames()?,
         Format::Png => {
             let dec = PngDecoder::new(Cursor::new(bytes))?;
             if !dec.is_apng()? {
@@ -87,8 +96,11 @@ pub fn decode_animation(bytes: &[u8], format: Format) -> Result<Option<Animation
         .into_iter()
         .map(|f| {
             let (num, den) = f.delay().numer_denom_ms();
-            let ms = if den == 0 { 100 } else { num / den };
-            (Raster::from_dynamic(DynamicImage::ImageRgba8(f.into_buffer())), ms)
+            let ms = num.checked_div(den).unwrap_or(100);
+            (
+                Raster::from_dynamic(DynamicImage::ImageRgba8(f.into_buffer())),
+                ms,
+            )
         })
         .collect();
     Ok(Some(Animation { frames, loops: 0 }))
@@ -111,7 +123,13 @@ pub struct RasterEncodeOptions {
 
 impl Default for RasterEncodeOptions {
     fn default() -> Self {
-        Self { quality: 85.0, lossless: false, speed: 6, metadata: MetadataPolicy::default(), matte: [255, 255, 255] }
+        Self {
+            quality: 85.0,
+            lossless: false,
+            speed: 6,
+            metadata: MetadataPolicy::default(),
+            matte: [255, 255, 255],
+        }
     }
 }
 
@@ -127,7 +145,8 @@ pub fn encode(raster: &Raster, format: Format, opts: &RasterEncodeOptions) -> Re
     let mut out = Vec::new();
     match format {
         Format::Png => {
-            let mut enc = PngEncoder::new_with_quality(&mut out, CompressionType::Best, FilterType::Adaptive);
+            let mut enc =
+                PngEncoder::new_with_quality(&mut out, CompressionType::Best, FilterType::Adaptive);
             if let Some(icc) = &raster.icc {
                 let _ = enc.set_icc_profile(icc.clone());
             }
@@ -145,24 +164,43 @@ pub fn encode(raster: &Raster, format: Format, opts: &RasterEncodeOptions) -> Re
             if let Some(exif) = metadata.exif {
                 let _ = enc.set_exif_metadata(exif);
             }
-            enc.write_image(rgb.as_raw(), rgb.width(), rgb.height(), image::ExtendedColorType::Rgb8)?;
+            enc.write_image(
+                rgb.as_raw(),
+                rgb.width(),
+                rgb.height(),
+                image::ExtendedColorType::Rgb8,
+            )?;
         }
         Format::Webp => out = encode_webp(&raster, quality, opts)?,
         Format::Avif => out = encode_avif(&raster, quality, opts)?,
-        Format::Gif => raster.to_dynamic()?.into_rgba8().write_to(&mut Cursor::new(&mut out), ImageFormat::Gif)?,
+        Format::Gif => raster
+            .to_dynamic()?
+            .into_rgba8()
+            .write_to(&mut Cursor::new(&mut out), ImageFormat::Gif)?,
         Format::Ico => {
             // ICO entries are at most 256×256.
             let mut img = raster.to_dynamic()?.into_rgba8();
             if img.width() > 256 || img.height() > 256 {
-                img = DynamicImage::ImageRgba8(img).resize(256, 256, image::imageops::FilterType::Lanczos3).into_rgba8();
+                img = DynamicImage::ImageRgba8(img)
+                    .resize(256, 256, image::imageops::FilterType::Lanczos3)
+                    .into_rgba8();
             }
             img.write_to(&mut Cursor::new(&mut out), ImageFormat::Ico)?;
         }
-        Format::Tiff => raster.to_dynamic()?.write_to(&mut Cursor::new(&mut out), ImageFormat::Tiff)?,
+        Format::Tiff => raster
+            .to_dynamic()?
+            .write_to(&mut Cursor::new(&mut out), ImageFormat::Tiff)?,
         Format::Bmp | Format::Qoi | Format::Tga => {
             let img = raster.to_dynamic()?;
-            let img = if raster.has_alpha() { DynamicImage::ImageRgba8(img.into_rgba8()) } else { DynamicImage::ImageRgb8(img.into_rgb8()) };
-            img.write_to(&mut Cursor::new(&mut out), image_format(format).expect("decodable format"))?;
+            let img = if raster.has_alpha() {
+                DynamicImage::ImageRgba8(img.into_rgba8())
+            } else {
+                DynamicImage::ImageRgb8(img.into_rgb8())
+            };
+            img.write_to(
+                &mut Cursor::new(&mut out),
+                image_format(format).expect("decodable format"),
+            )?;
         }
         Format::Pnm => {
             let img = DynamicImage::ImageRgb8(raster.to_dynamic()?.into_rgb8());
@@ -178,7 +216,11 @@ pub fn encode_gif_animation(frames: &[(Raster, u32)], loops: u32) -> Result<Vec<
     let mut out = Vec::new();
     {
         let mut enc = GifEncoder::new_with_speed(&mut out, 10);
-        enc.set_repeat(if loops == 0 { Repeat::Infinite } else { Repeat::Finite(loops.min(u16::MAX as u32) as u16) })?;
+        enc.set_repeat(if loops == 0 {
+            Repeat::Infinite
+        } else {
+            Repeat::Finite(loops.min(u16::MAX as u32) as u16)
+        })?;
         for (raster, ms) in frames {
             let delay = Delay::from_numer_denom_ms(*ms, 1);
             enc.encode_frame(Frame::from_parts(raster.to_rgba8()?, 0, 0, delay))?;
@@ -206,30 +248,44 @@ fn flatten(raster: &Raster, matte: [u8; 3]) -> Result<image::RgbImage> {
 
 fn encode_webp(raster: &Raster, quality: f32, opts: &RasterEncodeOptions) -> Result<Vec<u8>> {
     let img = raster.to_dynamic()?;
-    let (data, alpha) = if raster.has_alpha() { (img.into_rgba8().into_raw(), true) } else { (img.into_rgb8().into_raw(), false) };
+    let (data, alpha) = if raster.has_alpha() {
+        (img.into_rgba8().into_raw(), true)
+    } else {
+        (img.into_rgb8().into_raw(), false)
+    };
     let enc = if alpha {
         webp::Encoder::from_rgba(&data, raster.width, raster.height)
     } else {
         webp::Encoder::from_rgb(&data, raster.width, raster.height)
     };
-    let mut config = webp::WebPConfig::new().map_err(|_| Error::Encode("WebP is unavailable".into()))?;
+    let mut config =
+        webp::WebPConfig::new().map_err(|_| Error::Encode("WebP is unavailable".into()))?;
     config.lossless = i32::from(opts.lossless);
     config.quality = if opts.lossless { 100.0 } else { quality };
     // libwebp "method": 0 = fastest … 6 = smallest. Map our speed onto it.
     config.method = (10 - opts.speed.clamp(1, 10) as i32) * 6 / 9;
     config.alpha_compression = i32::from(!opts.lossless);
-    let mem = enc.encode_advanced(&config).map_err(|e| Error::Encode(format!("WebP: {e:?}")))?;
+    let mem = enc
+        .encode_advanced(&config)
+        .map_err(|e| Error::Encode(format!("WebP: {e:?}")))?;
     Ok(mem.to_vec())
 }
 
 fn encode_avif(raster: &Raster, quality: f32, opts: &RasterEncodeOptions) -> Result<Vec<u8>> {
     let rgba = raster.to_rgba8()?;
-    let pixels: Vec<ravif::RGBA8> = rgba.pixels().map(|p| ravif::RGBA8::new(p[0], p[1], p[2], p[3])).collect();
+    let pixels: Vec<ravif::RGBA8> = rgba
+        .pixels()
+        .map(|p| ravif::RGBA8::new(p[0], p[1], p[2], p[3]))
+        .collect();
     let encoded = ravif::Encoder::new()
         .with_quality(quality)
         .with_alpha_quality(quality)
         .with_speed(opts.speed.clamp(1, 10))
-        .encode_rgba(ravif::Img::new(&pixels[..], rgba.width() as usize, rgba.height() as usize))
+        .encode_rgba(ravif::Img::new(
+            &pixels[..],
+            rgba.width() as usize,
+            rgba.height() as usize,
+        ))
         .map_err(|e| Error::Encode(format!("AVIF: {e}")))?;
     Ok(encoded.avif_file)
 }
@@ -239,14 +295,19 @@ mod tests {
     use super::*;
 
     fn gradient(w: u32, h: u32) -> Raster {
-        let data = (0..w * h).flat_map(|i| [(i % w * 255 / w) as u8, (i / w * 255 / h) as u8, 128, 255]).collect();
+        let data = (0..w * h)
+            .flat_map(|i| [(i % w * 255 / w) as u8, (i / w * 255 / h) as u8, 128, 255])
+            .collect();
         Raster::from_u8(w, h, 4, data)
     }
 
     #[test]
     fn every_encodable_format_round_trips_dimensions() {
         let r = gradient(40, 30);
-        for format in Format::ALL.into_iter().filter(|f| f.can_encode() && *f != Format::Jxl) {
+        for format in Format::ALL
+            .into_iter()
+            .filter(|f| f.can_encode() && *f != Format::Jxl)
+        {
             let bytes = encode(&r, format, &RasterEncodeOptions::default()).unwrap();
             if format != Format::Tga {
                 // TGA has no signature to detect.
@@ -262,22 +323,35 @@ mod tests {
     #[test]
     fn png_is_lossless() {
         let r = gradient(16, 16);
-        let back = decode(&encode(&r, Format::Png, &RasterEncodeOptions::default()).unwrap(), Format::Png).unwrap();
+        let back = decode(
+            &encode(&r, Format::Png, &RasterEncodeOptions::default()).unwrap(),
+            Format::Png,
+        )
+        .unwrap();
         assert_eq!(back.to_rgba8().unwrap(), r.to_rgba8().unwrap());
     }
 
     #[test]
     fn jpeg_flattens_alpha_on_matte() {
         let r = Raster::from_u8(8, 8, 4, [0, 0, 0, 0].repeat(64));
-        let back = decode(&encode(&r, Format::Jpeg, &RasterEncodeOptions::default()).unwrap(), Format::Jpeg).unwrap();
-        assert!(back.to_rgba8().unwrap().pixels().all(|p| p[0] > 250), "transparent becomes white");
+        let back = decode(
+            &encode(&r, Format::Jpeg, &RasterEncodeOptions::default()).unwrap(),
+            Format::Jpeg,
+        )
+        .unwrap();
+        assert!(
+            back.to_rgba8().unwrap().pixels().all(|p| p[0] > 250),
+            "transparent becomes white"
+        );
     }
 
     #[test]
     fn animated_gif_round_trip() {
         let frames = vec![(gradient(10, 10), 100), (gradient(10, 10), 200)];
         let gif = encode_gif_animation(&frames, 0).unwrap();
-        let anim = decode_animation(&gif, Format::Gif).unwrap().expect("animated");
+        let anim = decode_animation(&gif, Format::Gif)
+            .unwrap()
+            .expect("animated");
         assert_eq!(anim.frames.len(), 2);
         assert_eq!(anim.frames[1].1, 200);
     }

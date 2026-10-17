@@ -35,8 +35,13 @@ pub struct Layer {
 /// Encodes `base` plus `layers`, composited by the decoder into one still
 /// image. Every frame has duration 0 and replaces the pixels below it.
 pub fn encode_layers(base: &Raster, layers: &[Layer], opts: &JxlEncodeOptions) -> Result<Vec<u8>> {
-    let any_lossless = opts.quality == JxlQuality::Lossless || layers.iter().any(|l| l.quality == JxlQuality::Lossless);
-    let profile_quality = if any_lossless { JxlQuality::Lossless } else { opts.quality };
+    let any_lossless = opts.quality == JxlQuality::Lossless
+        || layers.iter().any(|l| l.quality == JxlQuality::Lossless);
+    let profile_quality = if any_lossless {
+        JxlQuality::Lossless
+    } else {
+        opts.quality
+    };
     let mut enc = Encoder::new()?;
     enc.set_basic_info(base, profile_quality, None)?;
     enc.set_color(base, profile_quality)?;
@@ -45,10 +50,31 @@ pub fn encode_layers(base: &Raster, layers: &[Layer], opts: &JxlEncodeOptions) -
     let settings = enc.frame_settings(opts, opts.quality)?;
     enc.add_frame(settings, base, None)?;
     for layer in layers {
-        if layer.raster.channels != base.channels || layer.raster.samples.bits() != base.samples.bits() {
-            return Err(Error::InvalidInput("layers must have the same pixel layout as the base".into()));
+        if layer.raster.channels != base.channels
+            || layer.raster.samples.bits() != base.samples.bits()
+        {
+            return Err(Error::InvalidInput(
+                "layers must have the same pixel layout as the base".into(),
+            ));
         }
-        let settings = enc.frame_settings(opts, layer.quality)?;
+        // The focus point is in canvas coordinates; libjxl wants it relative
+        // to the frame and rejects points outside it.
+        let focus = opts.focus.and_then(|f| {
+            let (fx, fy) = (f.x as i64 - layer.x as i64, f.y as i64 - layer.y as i64);
+            let inside = (0..layer.raster.width as i64).contains(&fx)
+                && (0..layer.raster.height as i64).contains(&fy);
+            inside.then_some(super::FocusPoint {
+                x: fx as u32,
+                y: fy as u32,
+            })
+        });
+        let settings = enc.frame_settings(
+            &JxlEncodeOptions {
+                focus,
+                ..opts.clone()
+            },
+            layer.quality,
+        )?;
         enc.add_frame(settings, &layer.raster, Some((layer.x, layer.y, 0)))?;
     }
     enc.finish()
@@ -56,16 +82,26 @@ pub fn encode_layers(base: &Raster, layers: &[Layer], opts: &JxlEncodeOptions) -
 
 /// Encodes an animation. `frames` are `(image, duration in milliseconds)`;
 /// `loops` is the repeat count, 0 meaning forever.
-pub fn encode_animation(frames: &[(Raster, u32)], loops: u32, opts: &JxlEncodeOptions) -> Result<Vec<u8>> {
-    let (first, _) = frames.first().ok_or_else(|| Error::InvalidInput("an animation needs frames".into()))?;
+pub fn encode_animation(
+    frames: &[(Raster, u32)],
+    loops: u32,
+    opts: &JxlEncodeOptions,
+) -> Result<Vec<u8>> {
+    let (first, _) = frames
+        .first()
+        .ok_or_else(|| Error::InvalidInput("an animation needs frames".into()))?;
     let mut enc = Encoder::new()?;
     enc.set_basic_info(first, opts.quality, Some(loops))?;
     enc.set_color(first, opts.quality)?;
     enc.add_metadata(&first.metadata.with_policy(opts.metadata))?;
     let settings = enc.frame_settings(opts, opts.quality)?;
     for (raster, duration) in frames {
-        if (raster.width, raster.height, raster.channels) != (first.width, first.height, first.channels) {
-            return Err(Error::InvalidInput("all animation frames must have the same size".into()));
+        if (raster.width, raster.height, raster.channels)
+            != (first.width, first.height, first.channels)
+        {
+            return Err(Error::InvalidInput(
+                "all animation frames must have the same size".into(),
+            ));
         }
         enc.add_frame(settings, raster, Some((0, 0, (*duration).max(1))))?;
     }
@@ -91,8 +127,14 @@ pub fn transcode_jpeg(jpeg: &[u8], opts: &JxlEncodeOptions) -> Result<Vec<u8>> {
     let enc = Encoder::new()?;
     // SAFETY: `enc.ptr` is a live encoder for every call below.
     unsafe {
-        enc.check(sys::JxlEncoderUseContainer(enc.ptr, sys::JXL_TRUE), "enabling the container")?;
-        enc.check(sys::JxlEncoderStoreJPEGMetadata(enc.ptr, sys::JXL_TRUE), "storing JPEG data")?;
+        enc.check(
+            sys::JxlEncoderUseContainer(enc.ptr, sys::JXL_TRUE),
+            "enabling the container",
+        )?;
+        enc.check(
+            sys::JxlEncoderStoreJPEGMetadata(enc.ptr, sys::JXL_TRUE),
+            "storing JPEG data",
+        )?;
     }
     let settings = enc.frame_settings(opts, JxlQuality::Lossless)?;
     // SAFETY: valid settings pointer owned by `enc`; `input` outlives the call.
@@ -102,7 +144,10 @@ pub fn transcode_jpeg(jpeg: &[u8], opts: &JxlEncodeOptions) -> Result<Vec<u8>> {
             (sys::JXL_ENC_FRAME_SETTING_JPEG_KEEP_XMP, keep),
             (sys::JXL_ENC_FRAME_SETTING_JPEG_KEEP_JUMBF, keep),
         ] {
-            enc.check(sys::JxlEncoderFrameSettingsSetOption(settings, option, value), "setting JPEG metadata options")?;
+            enc.check(
+                sys::JxlEncoderFrameSettingsSetOption(settings, option, value),
+                "setting JPEG metadata options",
+            )?;
         }
         let status = sys::JxlEncoderAddJPEGFrame(settings, input.as_ptr(), input.len());
         if status != sys::JXL_ENC_SUCCESS {
@@ -130,13 +175,20 @@ impl Encoder {
             return Err(Error::Encode("out of memory".into()));
         }
         let runner = Runner::new();
-        let enc = Encoder { ptr, _runner: runner };
+        let enc = Encoder {
+            ptr,
+            _runner: runner,
+        };
         // SAFETY: both pointers are live; the runner outlives the encoder
         // because fields drop after `Drop::drop` runs.
         unsafe {
             if !enc._runner.as_ptr().is_null() {
                 enc.check(
-                    sys::JxlEncoderSetParallelRunner(ptr, sys::JxlThreadParallelRunner, enc._runner.as_ptr()),
+                    sys::JxlEncoderSetParallelRunner(
+                        ptr,
+                        sys::JxlThreadParallelRunner,
+                        enc._runner.as_ptr(),
+                    ),
                     "starting worker threads",
                 )?;
             }
@@ -157,7 +209,12 @@ impl Encoder {
         }
     }
 
-    fn set_basic_info(&mut self, raster: &Raster, quality: JxlQuality, animation_loops: Option<u32>) -> Result<()> {
+    fn set_basic_info(
+        &mut self,
+        raster: &Raster,
+        quality: JxlQuality,
+        animation_loops: Option<u32>,
+    ) -> Result<()> {
         // SAFETY: Init fully initialises the struct.
         let mut info = unsafe {
             let mut info = MaybeUninit::uninit();
@@ -186,7 +243,12 @@ impl Encoder {
             info.animation.num_loops = loops;
         }
         // SAFETY: live encoder, valid struct.
-        unsafe { self.check(sys::JxlEncoderSetBasicInfo(self.ptr, &info), "setting image properties") }
+        unsafe {
+            self.check(
+                sys::JxlEncoderSetBasicInfo(self.ptr, &info),
+                "setting image properties",
+            )
+        }
     }
 
     fn set_color(&mut self, raster: &Raster, quality: JxlQuality) -> Result<()> {
@@ -214,7 +276,12 @@ impl Encoder {
             c.assume_init()
         };
         // SAFETY: live encoder, valid struct.
-        unsafe { self.check(sys::JxlEncoderSetColorEncoding(self.ptr, &color), "setting the colour space") }
+        unsafe {
+            self.check(
+                sys::JxlEncoderSetColorEncoding(self.ptr, &color),
+                "setting the colour space",
+            )
+        }
     }
 
     /// Adds `Exif` and `xml ` boxes. Call before the first frame.
@@ -232,14 +299,26 @@ impl Encoder {
                 content.extend_from_slice(exif);
                 let t = box_type(b"Exif");
                 self.check(
-                    sys::JxlEncoderAddBox(self.ptr, t.as_ptr(), content.as_ptr(), content.len(), sys::JXL_FALSE),
+                    sys::JxlEncoderAddBox(
+                        self.ptr,
+                        t.as_ptr(),
+                        content.as_ptr(),
+                        content.len(),
+                        sys::JXL_FALSE,
+                    ),
                     "adding EXIF",
                 )?;
             }
             if let Some(xmp) = &metadata.xmp {
                 let t = box_type(b"xml ");
                 self.check(
-                    sys::JxlEncoderAddBox(self.ptr, t.as_ptr(), xmp.as_ptr(), xmp.len(), sys::JXL_FALSE),
+                    sys::JxlEncoderAddBox(
+                        self.ptr,
+                        t.as_ptr(),
+                        xmp.as_ptr(),
+                        xmp.len(),
+                        sys::JXL_FALSE,
+                    ),
                     "adding XMP",
                 )?;
             }
@@ -250,44 +329,91 @@ impl Encoder {
 
     /// Creates frame settings with all options applied. The returned pointer
     /// is owned by the encoder and freed with it.
-    fn frame_settings(&self, opts: &JxlEncodeOptions, quality: JxlQuality) -> Result<*mut sys::JxlEncoderFrameSettings> {
+    fn frame_settings(
+        &self,
+        opts: &JxlEncodeOptions,
+        quality: JxlQuality,
+    ) -> Result<*mut sys::JxlEncoderFrameSettings> {
         // SAFETY: live encoder; settings live as long as the encoder.
         unsafe {
             let s = sys::JxlEncoderFrameSettingsCreate(self.ptr, std::ptr::null());
             if s.is_null() {
                 return Err(Error::Encode("could not create frame settings".into()));
             }
-            let set = |option, value: i64, what| self.check(sys::JxlEncoderFrameSettingsSetOption(s, option, value), what);
-            set(sys::JXL_ENC_FRAME_SETTING_EFFORT, opts.effort.clamp(1, 10).into(), "setting effort")?;
-            set(sys::JXL_ENC_FRAME_SETTING_DECODING_SPEED, opts.decoding_speed.min(4).into(), "setting decoding speed")?;
+            let set = |option, value: i64, what| {
+                self.check(
+                    sys::JxlEncoderFrameSettingsSetOption(s, option, value),
+                    what,
+                )
+            };
+            set(
+                sys::JXL_ENC_FRAME_SETTING_EFFORT,
+                opts.effort.clamp(1, 10).into(),
+                "setting effort",
+            )?;
+            set(
+                sys::JXL_ENC_FRAME_SETTING_DECODING_SPEED,
+                opts.decoding_speed.min(4).into(),
+                "setting decoding speed",
+            )?;
             match quality {
                 JxlQuality::Lossless => {
-                    self.check(sys::JxlEncoderSetFrameLossless(s, sys::JXL_TRUE), "enabling lossless mode")?;
+                    self.check(
+                        sys::JxlEncoderSetFrameLossless(s, sys::JXL_TRUE),
+                        "enabling lossless mode",
+                    )?;
                 }
                 JxlQuality::Distance { distance } => {
-                    self.check(sys::JxlEncoderSetFrameDistance(s, distance.clamp(0.05, 25.0)), "setting quality")?;
+                    self.check(
+                        sys::JxlEncoderSetFrameDistance(s, distance.clamp(0.05, 25.0)),
+                        "setting quality",
+                    )?;
                 }
             }
             if opts.progressive {
                 // The same switches as `cjxl --progressive`.
                 if quality == JxlQuality::Lossless {
-                    set(sys::JXL_ENC_FRAME_SETTING_RESPONSIVE, 1, "enabling progressive mode")?;
+                    set(
+                        sys::JXL_ENC_FRAME_SETTING_RESPONSIVE,
+                        1,
+                        "enabling progressive mode",
+                    )?;
                 } else {
-                    set(sys::JXL_ENC_FRAME_SETTING_QPROGRESSIVE_AC, 1, "enabling progressive mode")?;
+                    set(
+                        sys::JXL_ENC_FRAME_SETTING_QPROGRESSIVE_AC,
+                        1,
+                        "enabling progressive mode",
+                    )?;
                     // libjxl 0.12 fails to encode when a progressive DC frame
                     // is combined with progressive AC *and* centre-first group
                     // order. The DC (1:8 preview) is stored before all AC
                     // groups anyway, so with a focus point we skip it.
                     if opts.focus.is_none() {
-                        set(sys::JXL_ENC_FRAME_SETTING_PROGRESSIVE_DC, 1, "enabling progressive mode")?;
+                        set(
+                            sys::JXL_ENC_FRAME_SETTING_PROGRESSIVE_DC,
+                            1,
+                            "enabling progressive mode",
+                        )?;
                     }
                 }
             }
             if let Some(focus) = opts.focus {
                 // Group order 1 = "centre first", spiralling out from the point.
-                set(sys::JXL_ENC_FRAME_SETTING_GROUP_ORDER, 1, "setting the subject-first order")?;
-                set(sys::JXL_ENC_FRAME_SETTING_GROUP_ORDER_CENTER_X, focus.x.into(), "setting the subject-first order")?;
-                set(sys::JXL_ENC_FRAME_SETTING_GROUP_ORDER_CENTER_Y, focus.y.into(), "setting the subject-first order")?;
+                set(
+                    sys::JXL_ENC_FRAME_SETTING_GROUP_ORDER,
+                    1,
+                    "setting the subject-first order",
+                )?;
+                set(
+                    sys::JXL_ENC_FRAME_SETTING_GROUP_ORDER_CENTER_X,
+                    focus.x.into(),
+                    "setting the subject-first order",
+                )?;
+                set(
+                    sys::JXL_ENC_FRAME_SETTING_GROUP_ORDER_CENTER_Y,
+                    focus.y.into(),
+                    "setting the subject-first order",
+                )?;
             }
             Ok(s)
         }
@@ -317,10 +443,16 @@ impl Encoder {
                 header.layer_info.xsize = raster.width;
                 header.layer_info.ysize = raster.height;
                 header.layer_info.blend_info.blendmode = sys::JXL_BLEND_REPLACE;
-                self.check(sys::JxlEncoderSetFrameHeader(settings, &header), "positioning a layer")?;
+                self.check(
+                    sys::JxlEncoderSetFrameHeader(settings, &header),
+                    "positioning a layer",
+                )?;
                 if raster.has_alpha() {
                     let blend = header.layer_info.blend_info;
-                    self.check(sys::JxlEncoderSetExtraChannelBlendInfo(settings, 0, &blend), "positioning a layer")?;
+                    self.check(
+                        sys::JxlEncoderSetExtraChannelBlendInfo(settings, 0, &blend),
+                        "positioning a layer",
+                    )?;
                 }
             }
             let format = sys::JxlPixelFormat {
@@ -338,7 +470,10 @@ impl Encoder {
                 Samples::U16(v) => (v.as_ptr().cast(), v.len() * 2),
                 Samples::F32(v) => (v.as_ptr().cast(), v.len() * 4),
             };
-            self.check(sys::JxlEncoderAddImageFrame(settings, &format, ptr, bytes), "adding pixels")
+            self.check(
+                sys::JxlEncoderAddImageFrame(settings, &format, ptr, bytes),
+                "adding pixels",
+            )
         }
     }
 

@@ -80,11 +80,19 @@ impl Metadata {
 
     /// Sets the EXIF orientation tag to 1 ("normal"), if present.
     pub fn reset_exif_orientation(&mut self) {
-        let Some(exif) = self.exif.as_mut() else { return };
+        let Some(exif) = self.exif.as_mut() else {
+            return;
+        };
         let Some(tiff) = Tiff::new(exif) else { return };
-        let Some(entry) = tiff.find_ifd0_entry(TAG_ORIENTATION) else { return };
+        let Some(entry) = tiff.find_ifd0_entry(TAG_ORIENTATION) else {
+            return;
+        };
         let big = tiff.big_endian;
-        let bytes = if big { 1u16.to_be_bytes() } else { 1u16.to_le_bytes() };
+        let bytes = if big {
+            1u16.to_be_bytes()
+        } else {
+            1u16.to_le_bytes()
+        };
         exif[entry + 8..entry + 10].copy_from_slice(&bytes);
     }
 }
@@ -101,17 +109,28 @@ struct Tiff<'a> {
 
 impl<'a> Tiff<'a> {
     fn new(data: &'a [u8]) -> Option<Self> {
-        is_tiff(data).then(|| Tiff { data, big_endian: data[0] == b'M' })
+        is_tiff(data).then(|| Tiff {
+            data,
+            big_endian: data[0] == b'M',
+        })
     }
 
     fn u16_at(&self, at: usize) -> Option<u16> {
         let b: [u8; 2] = self.data.get(at..at + 2)?.try_into().ok()?;
-        Some(if self.big_endian { u16::from_be_bytes(b) } else { u16::from_le_bytes(b) })
+        Some(if self.big_endian {
+            u16::from_be_bytes(b)
+        } else {
+            u16::from_le_bytes(b)
+        })
     }
 
     fn u32_at(&self, at: usize) -> Option<u32> {
         let b: [u8; 4] = self.data.get(at..at + 4)?.try_into().ok()?;
-        Some(if self.big_endian { u32::from_be_bytes(b) } else { u32::from_le_bytes(b) })
+        Some(if self.big_endian {
+            u32::from_be_bytes(b)
+        } else {
+            u32::from_le_bytes(b)
+        })
     }
 
     /// Byte offset of the 12-byte IFD0 entry with `tag`.
@@ -122,7 +141,9 @@ impl<'a> Tiff<'a> {
 
     fn find_entry(&self, ifd: usize, tag: u16) -> Option<usize> {
         let count = self.u16_at(ifd)? as usize;
-        (0..count).map(|i| ifd + 2 + i * 12).find(|&e| self.u16_at(e) == Some(tag))
+        (0..count)
+            .map(|i| ifd + 2 + i * 12)
+            .find(|&e| self.u16_at(e) == Some(tag))
     }
 }
 
@@ -142,14 +163,22 @@ fn type_size(t: u16) -> usize {
 /// unlinked bytes would still contain the coordinates.
 fn strip_gps(exif: &mut [u8]) {
     let Some(tiff) = Tiff::new(exif) else { return };
-    let Some(entry) = tiff.find_ifd0_entry(TAG_GPS_IFD) else { return };
-    let Some(gps_ifd) = tiff.u32_at(entry + 8).map(|v| v as usize) else { return };
-    let Some(count) = tiff.u16_at(gps_ifd).map(|v| v as usize) else { return };
+    let Some(entry) = tiff.find_ifd0_entry(TAG_GPS_IFD) else {
+        return;
+    };
+    let Some(gps_ifd) = tiff.u32_at(entry + 8).map(|v| v as usize) else {
+        return;
+    };
+    let Some(count) = tiff.u16_at(gps_ifd).map(|v| v as usize) else {
+        return;
+    };
 
     let mut ranges = Vec::new();
     for i in 0..count {
         let e = gps_ifd + 2 + i * 12;
-        let (Some(ty), Some(n)) = (tiff.u16_at(e + 2), tiff.u32_at(e + 4)) else { break };
+        let (Some(ty), Some(n)) = (tiff.u16_at(e + 2), tiff.u32_at(e + 4)) else {
+            break;
+        };
         let size = type_size(ty).saturating_mul(n as usize);
         if size > 4 {
             if let Some(off) = tiff.u32_at(e + 8) {
@@ -196,7 +225,12 @@ pub(crate) fn blank_xmp_gps(xmp: &mut [u8]) {
             // exif:GPSLatitude="..."
             let q1 = xmp[pos..].iter().position(|&c| c == b'"').map(|q| pos + q);
             let end = q1
-                .and_then(|q| xmp[q + 1..].iter().position(|&c| c == b'"').map(|e| q + 1 + e + 1))
+                .and_then(|q| {
+                    xmp[q + 1..]
+                        .iter()
+                        .position(|&c| c == b'"')
+                        .map(|e| q + 1 + e + 1)
+                })
                 .unwrap_or(xmp.len());
             (pos, end)
         };
@@ -265,7 +299,10 @@ mod tests {
 
     #[test]
     fn reads_and_resets_orientation() {
-        let mut m = Metadata { exif: Some(sample_exif()), xmp: None };
+        let mut m = Metadata {
+            exif: Some(sample_exif()),
+            xmp: None,
+        };
         assert_eq!(m.exif_orientation(), Some(6));
         m.reset_exif_orientation();
         assert_eq!(m.exif_orientation(), Some(1));
@@ -273,11 +310,25 @@ mod tests {
 
     #[test]
     fn strip_gps_erases_coordinates() {
-        let m = Metadata { exif: Some(sample_exif()), xmp: None }.with_policy(MetadataPolicy::StripGps);
+        let m = Metadata {
+            exif: Some(sample_exif()),
+            xmp: None,
+        }
+        .with_policy(MetadataPolicy::StripGps);
         let exif = m.exif.unwrap();
-        assert!(!exif.windows(2).any(|w| w == [0xAB, 0xAB]), "GPS bytes must be zeroed");
+        assert!(
+            !exif.windows(2).any(|w| w == [0xAB, 0xAB]),
+            "GPS bytes must be zeroed"
+        );
         assert_eq!(&exif[38..40], &[0, 0], "GPS IFD left empty");
-        assert_eq!(Metadata { exif: Some(exif), xmp: None }.exif_orientation(), Some(6));
+        assert_eq!(
+            Metadata {
+                exif: Some(exif),
+                xmp: None
+            }
+            .exif_orientation(),
+            Some(6)
+        );
     }
 
     #[test]
@@ -287,7 +338,10 @@ mod tests {
         blank_xmp_gps(&mut xmp);
         let out = String::from_utf8(xmp).unwrap();
         assert_eq!(out.len(), len, "length must not change");
-        assert!(!out.contains("GPS") && !out.contains("45,1N") && !out.contains("9,2E"), "{out}");
+        assert!(
+            !out.contains("GPS") && !out.contains("45,1N") && !out.contains("9,2E"),
+            "{out}"
+        );
         assert!(out.contains(r#"a="1""#) && out.contains(r#"b="2""#));
     }
 

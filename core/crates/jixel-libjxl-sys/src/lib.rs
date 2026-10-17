@@ -17,7 +17,11 @@
 //! * Nothing here is safe to call directly. The safe API lives in
 //!   `jixel-core::codec::jxl`.
 
-#![allow(non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms)]
+#![allow(
+    non_camel_case_types,
+    non_upper_case_globals,
+    clippy::upper_case_acronyms
+)]
 
 use std::ffi::{c_char, c_int, c_void};
 
@@ -327,15 +331,31 @@ extern "C" {
         parallel_runner: JxlParallelRunner,
         parallel_runner_opaque: *mut c_void,
     ) -> JxlDecoderStatus;
-    pub fn JxlDecoderSubscribeEvents(dec: *mut JxlDecoder, events_wanted: c_int) -> JxlDecoderStatus;
-    pub fn JxlDecoderSetKeepOrientation(dec: *mut JxlDecoder, skip_reorientation: JxlBool) -> JxlDecoderStatus;
-    pub fn JxlDecoderSetUnpremultiplyAlpha(dec: *mut JxlDecoder, unpremul_alpha: JxlBool) -> JxlDecoderStatus;
+    pub fn JxlDecoderSubscribeEvents(
+        dec: *mut JxlDecoder,
+        events_wanted: c_int,
+    ) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetKeepOrientation(
+        dec: *mut JxlDecoder,
+        skip_reorientation: JxlBool,
+    ) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetUnpremultiplyAlpha(
+        dec: *mut JxlDecoder,
+        unpremul_alpha: JxlBool,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderSetCoalescing(dec: *mut JxlDecoder, coalescing: JxlBool) -> JxlDecoderStatus;
     pub fn JxlDecoderProcessInput(dec: *mut JxlDecoder) -> JxlDecoderStatus;
-    pub fn JxlDecoderSetInput(dec: *mut JxlDecoder, data: *const u8, size: usize) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetInput(
+        dec: *mut JxlDecoder,
+        data: *const u8,
+        size: usize,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderReleaseInput(dec: *mut JxlDecoder) -> usize;
     pub fn JxlDecoderCloseInput(dec: *mut JxlDecoder);
-    pub fn JxlDecoderGetBasicInfo(dec: *const JxlDecoder, info: *mut JxlBasicInfo) -> JxlDecoderStatus;
+    pub fn JxlDecoderGetBasicInfo(
+        dec: *const JxlDecoder,
+        info: *mut JxlBasicInfo,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderGetExtraChannelInfo(
         dec: *const JxlDecoder,
         index: usize,
@@ -361,7 +381,10 @@ extern "C" {
         dec: *mut JxlDecoder,
         color_encoding: *const JxlColorEncoding,
     ) -> JxlDecoderStatus;
-    pub fn JxlDecoderGetFrameHeader(dec: *const JxlDecoder, header: *mut JxlFrameHeader) -> JxlDecoderStatus;
+    pub fn JxlDecoderGetFrameHeader(
+        dec: *const JxlDecoder,
+        header: *mut JxlFrameHeader,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderImageOutBufferSize(
         dec: *const JxlDecoder,
         format: *const JxlPixelFormat,
@@ -373,15 +396,36 @@ extern "C" {
         buffer: *mut c_void,
         size: usize,
     ) -> JxlDecoderStatus;
-    pub fn JxlDecoderSetImageOutBitDepth(dec: *mut JxlDecoder, bit_depth: *const JxlBitDepth) -> JxlDecoderStatus;
-    pub fn JxlDecoderSetJPEGBuffer(dec: *mut JxlDecoder, data: *mut u8, size: usize) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetImageOutBitDepth(
+        dec: *mut JxlDecoder,
+        bit_depth: *const JxlBitDepth,
+    ) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetJPEGBuffer(
+        dec: *mut JxlDecoder,
+        data: *mut u8,
+        size: usize,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderReleaseJPEGBuffer(dec: *mut JxlDecoder) -> usize;
-    pub fn JxlDecoderSetBoxBuffer(dec: *mut JxlDecoder, data: *mut u8, size: usize) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetBoxBuffer(
+        dec: *mut JxlDecoder,
+        data: *mut u8,
+        size: usize,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderReleaseBoxBuffer(dec: *mut JxlDecoder) -> usize;
-    pub fn JxlDecoderSetDecompressBoxes(dec: *mut JxlDecoder, decompress: JxlBool) -> JxlDecoderStatus;
-    pub fn JxlDecoderGetBoxType(dec: *mut JxlDecoder, type_: *mut c_char, decompressed: JxlBool) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetDecompressBoxes(
+        dec: *mut JxlDecoder,
+        decompress: JxlBool,
+    ) -> JxlDecoderStatus;
+    pub fn JxlDecoderGetBoxType(
+        dec: *mut JxlDecoder,
+        type_: *mut c_char,
+        decompressed: JxlBool,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderGetBoxSizeRaw(dec: *const JxlDecoder, size: *mut u64) -> JxlDecoderStatus;
-    pub fn JxlDecoderSetProgressiveDetail(dec: *mut JxlDecoder, detail: JxlProgressiveDetail) -> JxlDecoderStatus;
+    pub fn JxlDecoderSetProgressiveDetail(
+        dec: *mut JxlDecoder,
+        detail: JxlProgressiveDetail,
+    ) -> JxlDecoderStatus;
     pub fn JxlDecoderFlushImage(dec: *mut JxlDecoder) -> JxlDecoderStatus;
     pub fn JxlDecoderSetOutputColorProfile(
         dec: *mut JxlDecoder,
@@ -402,8 +446,11 @@ extern "C" {
         parallel_runner_opaque: *mut c_void,
     ) -> JxlEncoderStatus;
     pub fn JxlEncoderGetError(enc: *mut JxlEncoder) -> JxlEncoderError;
-    pub fn JxlEncoderProcessOutput(enc: *mut JxlEncoder, next_out: *mut *mut u8, avail_out: *mut usize)
-        -> JxlEncoderStatus;
+    pub fn JxlEncoderProcessOutput(
+        enc: *mut JxlEncoder,
+        next_out: *mut *mut u8,
+        avail_out: *mut usize,
+    ) -> JxlEncoderStatus;
     pub fn JxlEncoderSetFrameHeader(
         frame_settings: *mut JxlEncoderFrameSettings,
         frame_header: *const JxlFrameHeader,
@@ -439,24 +486,42 @@ extern "C" {
     pub fn JxlEncoderCloseBoxes(enc: *mut JxlEncoder);
     pub fn JxlEncoderCloseFrames(enc: *mut JxlEncoder);
     pub fn JxlEncoderCloseInput(enc: *mut JxlEncoder);
-    pub fn JxlEncoderSetColorEncoding(enc: *mut JxlEncoder, color: *const JxlColorEncoding) -> JxlEncoderStatus;
-    pub fn JxlEncoderSetICCProfile(enc: *mut JxlEncoder, icc_profile: *const u8, size: usize) -> JxlEncoderStatus;
+    pub fn JxlEncoderSetColorEncoding(
+        enc: *mut JxlEncoder,
+        color: *const JxlColorEncoding,
+    ) -> JxlEncoderStatus;
+    pub fn JxlEncoderSetICCProfile(
+        enc: *mut JxlEncoder,
+        icc_profile: *const u8,
+        size: usize,
+    ) -> JxlEncoderStatus;
     pub fn JxlEncoderInitBasicInfo(info: *mut JxlBasicInfo);
     pub fn JxlEncoderInitFrameHeader(frame_header: *mut JxlFrameHeader);
     pub fn JxlEncoderInitBlendInfo(blend_info: *mut JxlBlendInfo);
-    pub fn JxlEncoderSetBasicInfo(enc: *mut JxlEncoder, info: *const JxlBasicInfo) -> JxlEncoderStatus;
+    pub fn JxlEncoderSetBasicInfo(
+        enc: *mut JxlEncoder,
+        info: *const JxlBasicInfo,
+    ) -> JxlEncoderStatus;
     pub fn JxlEncoderFrameSettingsSetOption(
         frame_settings: *mut JxlEncoderFrameSettings,
         option: JxlEncoderFrameSettingId,
         value: i64,
     ) -> JxlEncoderStatus;
-    pub fn JxlEncoderUseContainer(enc: *mut JxlEncoder, use_container: JxlBool) -> JxlEncoderStatus;
-    pub fn JxlEncoderStoreJPEGMetadata(enc: *mut JxlEncoder, store_jpeg_metadata: JxlBool) -> JxlEncoderStatus;
+    pub fn JxlEncoderUseContainer(enc: *mut JxlEncoder, use_container: JxlBool)
+        -> JxlEncoderStatus;
+    pub fn JxlEncoderStoreJPEGMetadata(
+        enc: *mut JxlEncoder,
+        store_jpeg_metadata: JxlBool,
+    ) -> JxlEncoderStatus;
     pub fn JxlEncoderSetCodestreamLevel(enc: *mut JxlEncoder, level: c_int) -> JxlEncoderStatus;
-    pub fn JxlEncoderSetFrameLossless(frame_settings: *mut JxlEncoderFrameSettings, lossless: JxlBool)
-        -> JxlEncoderStatus;
-    pub fn JxlEncoderSetFrameDistance(frame_settings: *mut JxlEncoderFrameSettings, distance: f32)
-        -> JxlEncoderStatus;
+    pub fn JxlEncoderSetFrameLossless(
+        frame_settings: *mut JxlEncoderFrameSettings,
+        lossless: JxlBool,
+    ) -> JxlEncoderStatus;
+    pub fn JxlEncoderSetFrameDistance(
+        frame_settings: *mut JxlEncoderFrameSettings,
+        distance: f32,
+    ) -> JxlEncoderStatus;
     pub fn JxlEncoderDistanceFromQuality(quality: f32) -> f32;
     pub fn JxlEncoderFrameSettingsCreate(
         enc: *mut JxlEncoder,
@@ -477,8 +542,10 @@ extern "C" {
         start_range: u32,
         end_range: u32,
     ) -> c_int;
-    pub fn JxlThreadParallelRunnerCreate(memory_manager: *const JxlMemoryManager, num_worker_threads: usize)
-        -> *mut c_void;
+    pub fn JxlThreadParallelRunnerCreate(
+        memory_manager: *const JxlMemoryManager,
+        num_worker_threads: usize,
+    ) -> *mut c_void;
     pub fn JxlThreadParallelRunnerDestroy(runner_opaque: *mut c_void);
     pub fn JxlThreadParallelRunnerDefaultNumWorkerThreads() -> usize;
 }
@@ -506,6 +573,9 @@ mod tests {
         assert_eq!(std::mem::size_of::<JxlExtraChannelInfo>(), 44);
         assert_eq!(std::mem::size_of::<JxlColorEncoding>(), 104);
         assert_eq!(std::mem::size_of::<JxlBitDepth>(), 12);
-        assert_eq!(std::mem::size_of::<JxlCmsInterface>(), 8 * std::mem::size_of::<usize>());
+        assert_eq!(
+            std::mem::size_of::<JxlCmsInterface>(),
+            8 * std::mem::size_of::<usize>()
+        );
     }
 }

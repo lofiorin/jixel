@@ -123,7 +123,10 @@ impl Runner {
         // SAFETY: null memory manager = default allocator. Returns null only on
         // allocation failure, which libjxl treats as "no runner" (single thread).
         Runner(unsafe {
-            sys::JxlThreadParallelRunnerCreate(std::ptr::null(), sys::JxlThreadParallelRunnerDefaultNumWorkerThreads())
+            sys::JxlThreadParallelRunnerCreate(
+                std::ptr::null(),
+                sys::JxlThreadParallelRunnerDefaultNumWorkerThreads(),
+            )
         })
     }
 

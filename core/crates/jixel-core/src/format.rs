@@ -45,55 +45,61 @@ impl Format {
     pub fn detect(bytes: &[u8]) -> Option<Format> {
         let b = bytes;
         let has = |at: usize, sig: &[u8]| b.get(at..at + sig.len()) == Some(sig);
-        Some(if has(0, &[0xFF, 0x0A]) || has(0, b"\0\0\0\x0CJXL \r\n\x87\n") {
-            Format::Jxl
-        } else if has(0, &[0xFF, 0xD8, 0xFF]) {
-            Format::Jpeg
-        } else if has(0, b"\x89PNG\r\n\x1a\n") {
-            Format::Png
-        } else if has(0, b"RIFF") && has(8, b"WEBP") {
-            Format::Webp
-        } else if has(4, b"ftyp") {
-            match b.get(8..12)? {
-                b"avif" | b"avis" => Format::Avif,
-                b"heic" | b"heix" | b"hevc" | b"heim" | b"heis" | b"mif1" | b"msf1" => Format::Heic,
-                _ => return None,
-            }
-        } else if has(0, b"GIF87a") || has(0, b"GIF89a") {
-            Format::Gif
-        } else if has(0, b"II*\0") || has(0, b"MM\0*") {
-            Format::Tiff
-        } else if has(0, b"BM") {
-            Format::Bmp
-        } else if has(0, b"qoif") {
-            Format::Qoi
-        } else if has(0, &[0, 0, 1, 0]) {
-            Format::Ico
-        } else if b.first() == Some(&b'P') && matches!(b.get(1), Some(b'1'..=b'7')) {
-            Format::Pnm
-        } else {
-            return None;
-        })
+        Some(
+            if has(0, &[0xFF, 0x0A]) || has(0, b"\0\0\0\x0CJXL \r\n\x87\n") {
+                Format::Jxl
+            } else if has(0, &[0xFF, 0xD8, 0xFF]) {
+                Format::Jpeg
+            } else if has(0, b"\x89PNG\r\n\x1a\n") {
+                Format::Png
+            } else if has(0, b"RIFF") && has(8, b"WEBP") {
+                Format::Webp
+            } else if has(4, b"ftyp") {
+                match b.get(8..12)? {
+                    b"avif" | b"avis" => Format::Avif,
+                    b"heic" | b"heix" | b"hevc" | b"heim" | b"heis" | b"mif1" | b"msf1" => {
+                        Format::Heic
+                    }
+                    _ => return None,
+                }
+            } else if has(0, b"GIF87a") || has(0, b"GIF89a") {
+                Format::Gif
+            } else if has(0, b"II*\0") || has(0, b"MM\0*") {
+                Format::Tiff
+            } else if has(0, b"BM") {
+                Format::Bmp
+            } else if has(0, b"qoif") {
+                Format::Qoi
+            } else if has(0, &[0, 0, 1, 0]) {
+                Format::Ico
+            } else if b.first() == Some(&b'P') && matches!(b.get(1), Some(b'1'..=b'7')) {
+                Format::Pnm
+            } else {
+                return None;
+            },
+        )
     }
 
     /// Format for a file extension (case-insensitive, with or without a dot).
     pub fn from_extension(ext: &str) -> Option<Format> {
-        Some(match ext.trim_start_matches('.').to_ascii_lowercase().as_str() {
-            "jxl" => Format::Jxl,
-            "jpg" | "jpeg" | "jpe" | "jfif" => Format::Jpeg,
-            "png" | "apng" => Format::Png,
-            "webp" => Format::Webp,
-            "avif" => Format::Avif,
-            "gif" => Format::Gif,
-            "tif" | "tiff" => Format::Tiff,
-            "bmp" => Format::Bmp,
-            "qoi" => Format::Qoi,
-            "ico" => Format::Ico,
-            "tga" => Format::Tga,
-            "pnm" | "pbm" | "pgm" | "ppm" | "pam" => Format::Pnm,
-            "heic" | "heif" => Format::Heic,
-            _ => return None,
-        })
+        Some(
+            match ext.trim_start_matches('.').to_ascii_lowercase().as_str() {
+                "jxl" => Format::Jxl,
+                "jpg" | "jpeg" | "jpe" | "jfif" => Format::Jpeg,
+                "png" | "apng" => Format::Png,
+                "webp" => Format::Webp,
+                "avif" => Format::Avif,
+                "gif" => Format::Gif,
+                "tif" | "tiff" => Format::Tiff,
+                "bmp" => Format::Bmp,
+                "qoi" => Format::Qoi,
+                "ico" => Format::Ico,
+                "tga" => Format::Tga,
+                "pnm" | "pbm" | "pgm" | "ppm" | "pam" => Format::Pnm,
+                "heic" | "heif" => Format::Heic,
+                _ => return None,
+            },
+        )
     }
 
     /// Preferred file extension, without the dot.
@@ -162,7 +168,10 @@ impl Format {
     }
 
     pub fn supports_alpha(self) -> bool {
-        !matches!(self, Format::Jpeg | Format::Bmp | Format::Pnm | Format::Heic)
+        !matches!(
+            self,
+            Format::Jpeg | Format::Bmp | Format::Pnm | Format::Heic
+        )
     }
 
     pub fn supports_animation(self) -> bool {
@@ -171,7 +180,10 @@ impl Format {
 
     /// Whether the format has an adjustable lossy quality.
     pub fn is_lossy_capable(self) -> bool {
-        matches!(self, Format::Jxl | Format::Jpeg | Format::Webp | Format::Avif)
+        matches!(
+            self,
+            Format::Jxl | Format::Jpeg | Format::Webp | Format::Avif
+        )
     }
 
     /// Whether the format can store an image without any loss.
@@ -193,8 +205,14 @@ mod tests {
     #[test]
     fn detects_magic_numbers() {
         assert_eq!(Format::detect(&[0xFF, 0x0A, 0]), Some(Format::Jxl));
-        assert_eq!(Format::detect(b"\0\0\0\x0CJXL \r\n\x87\n...."), Some(Format::Jxl));
-        assert_eq!(Format::detect(&[0xFF, 0xD8, 0xFF, 0xE0]), Some(Format::Jpeg));
+        assert_eq!(
+            Format::detect(b"\0\0\0\x0CJXL \r\n\x87\n...."),
+            Some(Format::Jxl)
+        );
+        assert_eq!(
+            Format::detect(&[0xFF, 0xD8, 0xFF, 0xE0]),
+            Some(Format::Jpeg)
+        );
         assert_eq!(Format::detect(b"RIFF\0\0\0\0WEBPVP8 "), Some(Format::Webp));
         assert_eq!(Format::detect(b"\0\0\0\x1cftypavif"), Some(Format::Avif));
         assert_eq!(Format::detect(b"\0\0\0\x18ftypheic"), Some(Format::Heic));
