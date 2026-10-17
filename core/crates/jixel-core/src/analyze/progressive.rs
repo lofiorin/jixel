@@ -1,7 +1,8 @@
 //! Progressive loading: what a visitor sees while the file downloads.
 //!
-//! A progressive JPEG XL shows a complete, blurry picture after a few
-//! percent of the bytes and sharpens as more arrive. With a focus point the
+//! A JPEG XL shows a complete, blurry picture as soon as its 1:8 "DC" image
+//! has arrived (typically 10–20% of the file, less for smooth photos) and a
+//! progressive one sharpens in several passes as more arrives. With a focus point the
 //! subject sharpens first. [`preview`] decodes truncated copies of a file
 //! to make that visible.
 

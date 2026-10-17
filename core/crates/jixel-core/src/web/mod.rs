@@ -43,7 +43,7 @@ pub struct WebExportOptions {
     /// is used for the `<img>` fallback, so it should work everywhere.
     pub fallbacks: Vec<Format>,
     pub effort: u8,
-    /// Progressive JPEG XL: a preview appears after a few percent of the file.
+    /// Progressive JPEG XL: a blurry preview appears after the first 10–20% of the file.
     pub progressive: bool,
     /// Load this point first (subject-first loading). Displayed coordinates
     /// of the *source* image; scaled for every width.
