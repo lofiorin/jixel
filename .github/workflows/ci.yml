@@ -106,7 +106,7 @@ jobs:
           cache: true
       - name: Build
         working-directory: app
-        run: flutter build ${{ matrix.target }} --release
+        run: flutter build ${{ matrix.target }} --release --verbose
       - uses: actions/upload-artifact@v4
         with:
           name: jixel-${{ matrix.target }}
