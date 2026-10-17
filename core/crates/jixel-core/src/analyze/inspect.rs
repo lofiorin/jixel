@@ -32,8 +32,51 @@ pub struct Inspection {
     pub bits_per_pixel: f64,
     /// Present for JPEG XL files: the codec-level details.
     pub jxl: Option<JxlProbe>,
-    /// Plain-language advice, e.g. "can be made 20% smaller without loss".
+    /// Advice as codes, for apps that show it in the user's language.
+    pub tips: Vec<Tip>,
+    /// The same advice in plain English, e.g. for the CLI.
     pub suggestions: Vec<String>,
+}
+
+/// One piece of advice about a file.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "code", rename_all = "snake_case")]
+pub enum Tip {
+    /// JPEG: lossless recompression to JPEG XL is available.
+    Jpeg,
+    /// Lossless source (PNG, TIFF…): lossless JPEG XL is much smaller.
+    LosslessPng,
+    /// Animated GIF: animated JPEG XL is smaller and full colour.
+    AnimatedGif,
+    /// WebP: JPEG XL keeps more detail at the same size.
+    Webp,
+    /// The file reveals where it was taken.
+    Gps,
+    /// An alpha channel that is fully opaque.
+    OpaqueAlpha,
+    /// A JPEG XL that can be turned back into its original JPEG.
+    Reconstruct,
+    /// High dynamic range content.
+    Hdr,
+    /// Larger than most screens.
+    Large { width: u32, height: u32 },
+}
+
+impl Tip {
+    /// English text of the tip.
+    pub fn text(self) -> String {
+        match self {
+            Tip::Jpeg => "Convert to JPEG XL with default settings: about 20% smaller with zero loss, and the original JPEG can be restored bit for bit.".into(),
+            Tip::LosslessPng => "Lossless JPEG XL (quality 100) keeps every pixel and is usually 30–50% smaller than PNG.".into(),
+            Tip::AnimatedGif => "Animated JPEG XL keeps full colour (GIF is limited to 256) and is usually much smaller.".into(),
+            Tip::Webp => "WebP is limited to 8 bits and 4:2:0 colour in lossy mode; JPEG XL at the same size keeps more detail.".into(),
+            Tip::Gps => "This file contains the GPS location where it was taken. Jixel removes it by default when exporting.".into(),
+            Tip::OpaqueAlpha => "The transparency channel is fully opaque: dropping it saves space (Jixel does this automatically).".into(),
+            Tip::Reconstruct => "This JPEG XL contains a recompressed JPEG: it can be turned back into the identical original JPEG.".into(),
+            Tip::Hdr => "This is an HDR image. Keep it as JPEG XL or 16-bit PNG/TIFF to preserve the highlights.".into(),
+            Tip::Large { width, height } => format!("At {width}×{height} this image is larger than most screens: \"Optimize for web\" creates right-sized versions."),
+        }
+    }
 }
 
 /// Inspects any supported file.
@@ -52,38 +95,34 @@ pub fn inspect(bytes: &[u8]) -> Result<Inspection> {
     let alpha_used = r.alpha_is_used();
     let frames = decoded.animation.as_ref().map_or(1, |a| a.frames.len());
 
-    let mut suggestions = Vec::new();
+    let mut tips = Vec::new();
     match decoded.format {
-        Format::Jpeg => suggestions.push(
-            "Convert to JPEG XL with default settings: about 20% smaller with zero loss, and the original JPEG can be restored bit for bit.".into(),
-        ),
-        Format::Png | Format::Bmp | Format::Tiff | Format::Tga | Format::Pnm | Format::Qoi if frames == 1 => suggestions.push(
-            "Lossless JPEG XL (quality 100) keeps every pixel and is usually 30–50% smaller than PNG.".into(),
-        ),
-        Format::Gif if frames > 1 => suggestions.push(
-            "Animated JPEG XL keeps full colour (GIF is limited to 256) and is usually much smaller.".into(),
-        ),
-        Format::Webp => suggestions.push(
-            "WebP is limited to 8 bits and 4:2:0 colour in lossy mode; JPEG XL at the same size keeps more detail.".into(),
-        ),
+        Format::Jpeg => tips.push(Tip::Jpeg),
+        Format::Png | Format::Bmp | Format::Tiff | Format::Tga | Format::Pnm | Format::Qoi
+            if frames == 1 =>
+        {
+            tips.push(Tip::LosslessPng)
+        }
+        Format::Gif if frames > 1 => tips.push(Tip::AnimatedGif),
+        Format::Webp => tips.push(Tip::Webp),
         _ => {}
     }
     if has_gps {
-        suggestions.push("This file contains the GPS location where it was taken. Jixel removes it by default when exporting.".into());
+        tips.push(Tip::Gps);
     }
     if r.has_alpha() && !alpha_used {
-        suggestions.push("The transparency channel is fully opaque: dropping it saves space (Jixel does this automatically).".into());
+        tips.push(Tip::OpaqueAlpha);
     }
     if let Some(p) = &jxl_probe {
         if p.jpeg_reconstruction {
-            suggestions.push("This JPEG XL contains a recompressed JPEG: it can be turned back into the identical original JPEG.".into());
+            tips.push(Tip::Reconstruct);
         }
         if p.is_hdr() {
-            suggestions.push("This is an HDR image. Keep it as JPEG XL or 16-bit PNG/TIFF to preserve the highlights.".into());
+            tips.push(Tip::Hdr);
         }
     }
     if width.max(height) > 2560 {
-        suggestions.push(format!("At {width}×{height} this image is larger than most screens: \"Optimize for web\" creates right-sized versions."));
+        tips.push(Tip::Large { width, height });
     }
 
     Ok(Inspection {
@@ -105,7 +144,8 @@ pub fn inspect(bytes: &[u8]) -> Result<Inspection> {
         orientation: r.orientation,
         bits_per_pixel: bytes.len() as f64 * 8.0 / (width as f64 * height as f64),
         jxl: jxl_probe,
-        suggestions,
+        suggestions: tips.iter().map(|t| t.text()).collect(),
+        tips,
     })
 }
 
