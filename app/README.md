@@ -1,17 +1,23 @@
-# jixel
+# Jixel app
 
-Convert, optimise and inspect images with JPEG XL.
+The Flutter app for iOS, Android, macOS, Windows and Linux.
 
-## Getting Started
+```bash
+../scripts/bootstrap.sh       # once
+flutter run -d macos          # or windows, linux, an iOS simulator, an Android device
+flutter test                  # unit + widget tests (no native engine needed)
+flutter test integration_test -d macos   # real engine, on a desktop or device
+```
 
-This project is a starting point for a Flutter application.
+| Folder | What |
+|---|---|
+| `lib/engine/` | typed Dart API over the Rust engine (`Engine.convert(...)` …) |
+| `lib/state/` | settings, app state, the Convert queue |
+| `lib/ui/` | shell, theme, widgets, screens |
+| `lib/l10n/` | translations, generated from `tool/strings.py` |
+| `rust/` | the C ABI bridge (`jixel_call`) to `core/crates/jixel-core` |
+| `rust_builder/` | the `jixel_native` plugin that builds the bridge with cargokit |
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Read [../docs/en/architecture.md](../docs/en/architecture.md) for how the
+pieces fit, and [../docs/en/building.md](../docs/en/building.md) for
+platform requirements.

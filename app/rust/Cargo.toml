@@ -20,9 +20,13 @@ image = { version = "0.25", default-features = false }
 # Image code is unusably slow without optimisation, even in debug builds.
 [profile.dev.package."*"]
 opt-level = 3
+debug = false
 
+# Debug info for the whole engine is several GB and rarely useful from the
+# app: debug the engine with the CLI or its tests instead.
 [profile.dev]
 opt-level = 1
+debug = "line-tables-only"
 
 [profile.release]
 lto = "thin"
