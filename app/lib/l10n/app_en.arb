@@ -1,0 +1,342 @@
+{
+  "@@locale": "en",
+  "appTitle": "Jixel",
+  "navHome": "Home",
+  "navConvert": "Convert",
+  "navWeb": "Web",
+  "navStudio": "Studio",
+  "navInspect": "Inspect",
+  "navSettings": "Settings",
+  "homeHeadline": "Smaller images. Same quality.",
+  "@homeHeadline": {
+    "description": "Big headline on the home screen."
+  },
+  "homeSubtitle": "Convert, optimise and inspect images with JPEG XL. Everything happens on your device: nothing is uploaded.",
+  "dropTitle": "Drop images here",
+  "dropOr": "or",
+  "chooseFiles": "Choose files",
+  "chooseImage": "Choose image",
+  "changeImage": "Change image",
+  "supportedFormats": "Reads JPEG XL, JPEG, PNG, WebP, GIF, TIFF, BMP and more.",
+  "whatToDo": "What do you want to do?",
+  "taskConvertTitle": "Convert",
+  "taskConvertBody": "Any format to JPEG XL and back. JPEGs shrink by about 20% with zero loss.",
+  "taskWebTitle": "Optimize for web",
+  "taskWebBody": "Every screen size, fallbacks for old browsers, and code for HTML, Next.js and WordPress.",
+  "taskBackgroundTitle": "Remove background",
+  "taskBackgroundBody": "On-device AI. Transparent or solid colour, ready for your shop.",
+  "taskStudioTitle": "Studio",
+  "taskStudioBody": "Compare quality, sharpen the subject, crop, split into tiles, preview loading.",
+  "addFiles": "Add files",
+  "clearList": "Clear",
+  "convertCount": "{count, plural, =1{Convert 1 image} other{Convert {count} images}}",
+  "@convertCount": {
+    "description": "Primary button of the Convert screen.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "emptyQueue": "Add images to start",
+  "formatLabel": "Format",
+  "qualityLabel": "Quality",
+  "qualityLossless": "Lossless",
+  "qualityVisuallyLossless": "Visually lossless",
+  "qualityHigh": "High",
+  "qualityBalanced": "Balanced",
+  "qualitySmall": "Smallest",
+  "jpegLosslessHint": "JPEG files are repacked losslessly: about 20% smaller, and the original can be restored exactly.",
+  "advanced": "Advanced",
+  "speedLabel": "Encoding speed",
+  "speedFast": "Fast",
+  "speedBalanced": "Balanced",
+  "speedMax": "Smallest file",
+  "progressiveLabel": "Progressive loading",
+  "progressiveHint": "A preview appears while the image downloads.",
+  "maxWidthLabel": "Maximum width",
+  "noLimit": "Original size",
+  "reencodeJpeg": "Re-encode JPEGs instead (smaller, lossy)",
+  "metadataLabel": "Metadata",
+  "metadataKeep": "Keep all",
+  "metadataStripGps": "Remove location",
+  "metadataStripAll": "Remove all",
+  "statusWaiting": "Waiting",
+  "statusWorking": "Converting…",
+  "statusFailed": "Failed",
+  "fidelityReversible": "Lossless · original restorable",
+  "fidelityPixelExact": "Lossless",
+  "fidelityLossy": "Lossy",
+  "savedTo": "Saved to {folder}",
+  "@savedTo": {
+    "placeholders": {
+      "folder": {
+        "type": "Object"
+      }
+    }
+  },
+  "showInFolder": "Show",
+  "share": "Share",
+  "totalSaving": "{saved} saved ({percent})",
+  "@totalSaving": {
+    "placeholders": {
+      "saved": {
+        "type": "Object"
+      },
+      "percent": {
+        "type": "Object"
+      }
+    }
+  },
+  "totalGrowth": "{size} larger ({percent})",
+  "@totalGrowth": {
+    "placeholders": {
+      "size": {
+        "type": "Object"
+      },
+      "percent": {
+        "type": "Object"
+      }
+    }
+  },
+  "beforeAfter": "Before / after",
+  "original": "Original",
+  "result": "Result",
+  "notes": "Notes",
+  "webIntro": "Creates JPEG XL in every useful size, fallbacks for older browsers, and the code to paste into your site.",
+  "widthsLabel": "Sizes (px)",
+  "fallbacksLabel": "Fallback for older browsers",
+  "heroLabel": "Hero image (top of the page)",
+  "heroHint": "Loads first, with high priority, for the best Largest Contentful Paint.",
+  "altLabel": "Alt text (accessibility and SEO)",
+  "baseUrlLabel": "Public URL path",
+  "nameLabel": "File name",
+  "autoFocusLabel": "Load the subject first",
+  "autoFocusHint": "The subject sharpens before the background on slow connections.",
+  "exportButton": "Export",
+  "exporting": "Exporting…",
+  "webResultTitle": "{count} files ready",
+  "@webResultTitle": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "smallerThan": "{percent} smaller than {format}",
+  "@smallerThan": {
+    "placeholders": {
+      "percent": {
+        "type": "Object"
+      },
+      "format": {
+        "type": "Object"
+      }
+    }
+  },
+  "largerThan": "{percent} larger than {format}",
+  "@largerThan": {
+    "placeholders": {
+      "percent": {
+        "type": "Object"
+      },
+      "format": {
+        "type": "Object"
+      }
+    }
+  },
+  "copy": "Copy",
+  "copied": "Copied to clipboard",
+  "webHowTo": "Upload the folder to your server at the URL path above, then paste the code into your page.",
+  "studioEmpty": "Open an image to explore what JPEG XL can do with it.",
+  "toolCompare": "Compare",
+  "toolSubject": "Subject",
+  "toolBackground": "Background",
+  "toolCrop": "Crop & tiles",
+  "toolProgressive": "Loading",
+  "toolBattle": "Format battle",
+  "scoreLabel": "Quality score",
+  "scoreVisuallyLossless": "visually lossless",
+  "scoreVeryHigh": "very high",
+  "scoreHigh": "high",
+  "scoreMedium": "medium",
+  "scoreLow": "low",
+  "scoreExplain": "SSIMULACRA2, the metric used to tune JPEG XL: 90+ means you cannot tell the difference.",
+  "saveResult": "Save",
+  "working": "Working…",
+  "subjectIntro": "JPEG XL can load the subject first and give it more detail than the background, in one normal image file.",
+  "detectSubject": "Find subject",
+  "boostRun": "Create optimised file",
+  "boostStandard": "Standard",
+  "boostLayered": "Subject boost",
+  "boostSubjectScore": "subject score {score}",
+  "@boostSubjectScore": {
+    "placeholders": {
+      "score": {
+        "type": "Object"
+      }
+    }
+  },
+  "boostRecommended": "Subject boost wins: sharper subject, smaller or equal file. Saved.",
+  "boostNotWorth": "The standard file is better for this image. Saved, with the subject loading first.",
+  "boostWholeImage": "The subject fills most of the image: subject-first loading is enough.",
+  "bgTransparent": "Transparent",
+  "bgWhite": "White",
+  "bgBlack": "Black",
+  "hardEdges": "Hard edges",
+  "removeBackgroundButton": "Remove background",
+  "bgUnavailable": "Background removal is not included in this build.",
+  "cropIntro": "Crops and tiles are pixel-exact: every pixel is identical to the original, whatever its format.",
+  "cropButton": "Save crop",
+  "cropHint": "Drag on the image to select an area.",
+  "gridLabel": "Grid {cols} × {rows}",
+  "@gridLabel": {
+    "placeholders": {
+      "cols": {
+        "type": "Object"
+      },
+      "rows": {
+        "type": "Object"
+      }
+    }
+  },
+  "tilesButton": "Split into tiles",
+  "deepZoomButton": "Deep Zoom pyramid",
+  "deepZoomHint": "For zoomable viewers such as OpenSeadragon: maps, plans, product close-ups.",
+  "tilesDone": "{count} tiles saved",
+  "@tilesDone": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "deepZoomDone": "{levels} levels, {count} tiles saved",
+  "@deepZoomDone": {
+    "placeholders": {
+      "levels": {
+        "type": "Object"
+      },
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "progressiveIntro": "Drag the slider to see what a visitor sees while the image downloads.",
+  "downloaded": "{percent} downloaded · {size}",
+  "@downloaded": {
+    "placeholders": {
+      "percent": {
+        "type": "Object"
+      },
+      "size": {
+        "type": "Object"
+      }
+    }
+  },
+  "nothingYet": "Nothing to show yet",
+  "battleIntro": "Each format is tuned to the same visual quality. Who makes the smallest file?",
+  "battleTarget": "Target score {score}",
+  "@battleTarget": {
+    "placeholders": {
+      "score": {
+        "type": "Object"
+      }
+    }
+  },
+  "battleRun": "Start",
+  "notScored": "not scored",
+  "vsJpeg": "{percent} vs JPEG",
+  "@vsJpeg": {
+    "placeholders": {
+      "percent": {
+        "type": "Object"
+      }
+    }
+  },
+  "winner": "Winner",
+  "inspectEmpty": "Open a file to see what is inside.",
+  "dimensions": "Dimensions",
+  "fileSize": "File size",
+  "bitDepth": "Bit depth",
+  "bitsPerPixel": "Bits per pixel",
+  "transparency": "Transparency",
+  "colorProfile": "Colour profile",
+  "exif": "EXIF",
+  "location": "Location (GPS)",
+  "frames": "Frames",
+  "yes": "Yes",
+  "no": "No",
+  "unused": "present but unused",
+  "embedded": "Embedded",
+  "srgbDefault": "sRGB (default)",
+  "jxlDetails": "JPEG XL details",
+  "jxlMode": "Mode",
+  "jxlLossless": "Lossless / original colour space",
+  "jxlLossy": "Lossy (XYB)",
+  "jxlContainsJpeg": "Contains the original JPEG",
+  "hdr": "HDR",
+  "restoreJpeg": "Restore original JPEG",
+  "suggestions": "Suggestions",
+  "tipJpeg": "Convert to JPEG XL with default settings: about 20% smaller with zero loss, and the original JPEG can be restored bit for bit.",
+  "@tipJpeg": {
+    "description": "Inspect suggestion for JPEG files."
+  },
+  "tipLosslessPng": "Lossless JPEG XL keeps every pixel and is usually 30–50% smaller than PNG.",
+  "tipAnimatedGif": "Animated JPEG XL keeps full colour (GIF is limited to 256) and is usually much smaller.",
+  "tipWebp": "WebP is limited to 8 bits and reduced colour detail; JPEG XL at the same size keeps more detail.",
+  "tipGps": "This photo contains the GPS location where it was taken. Jixel removes it by default when exporting.",
+  "tipOpaqueAlpha": "The transparency channel is fully opaque: dropping it saves space (Jixel does this automatically).",
+  "tipReconstruct": "This JPEG XL contains a recompressed JPEG: it can be turned back into the identical original.",
+  "tipHdr": "This is an HDR image. Keep it as JPEG XL (or 16-bit PNG/TIFF) to preserve the highlights.",
+  "tipLarge": "At {width}×{height} this image is larger than most screens: Optimize for web creates right-sized versions.",
+  "@tipLarge": {
+    "placeholders": {
+      "width": {
+        "type": "Object"
+      },
+      "height": {
+        "type": "Object"
+      }
+    }
+  },
+  "appearance": "Appearance",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "language": "Language",
+  "languageSystem": "System",
+  "outputFolder": "Output folder",
+  "change": "Change",
+  "defaults": "Defaults",
+  "about": "About",
+  "aboutBody": "Jixel is open source (Apache-2.0). Your images never leave your device.",
+  "engineVersion": "Jixel {version} · libjxl {libjxl}",
+  "@engineVersion": {
+    "placeholders": {
+      "version": {
+        "type": "Object"
+      },
+      "libjxl": {
+        "type": "Object"
+      }
+    }
+  },
+  "licenses": "Open-source licences",
+  "errorGeneric": "Something went wrong: {message}",
+  "@errorGeneric": {
+    "placeholders": {
+      "message": {
+        "type": "Object"
+      }
+    }
+  },
+  "unsupportedFiles": "{count, plural, =1{1 file skipped: not a supported image} other{{count} files skipped: not supported images}}",
+  "@unsupportedFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

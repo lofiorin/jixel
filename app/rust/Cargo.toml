@@ -1,0 +1,30 @@
+[package]
+name = "jixel_bridge"
+description = "C ABI between the Jixel Flutter app and jixel-core."
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+# staticlib for iOS/macOS (linked into the plugin framework), cdylib for
+# Android, Windows and Linux. Cargokit picks the right one per platform.
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+jixel-core = { path = "../../core/crates/jixel-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+image = { version = "0.25", default-features = false }
+
+# Image code is unusably slow without optimisation, even in debug builds.
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

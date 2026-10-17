@@ -1,0 +1,29 @@
+name: jixel_native
+description: Builds the Jixel Rust engine (../rust) for every Flutter platform with Cargokit.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+# This package has no Dart code of its own: it only makes Flutter build the
+# Rust crate and bundle the resulting library. The app loads it with dart:ffi
+# (see app/lib/engine/native.dart).
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
+      linux:
+        ffiPlugin: true
+      macos:
+        ffiPlugin: true
+      windows:
+        ffiPlugin: true

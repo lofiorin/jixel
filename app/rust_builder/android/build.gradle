@@ -1,0 +1,47 @@
+// Builds ../../rust with Cargokit and packages libjixel_bridge.so for every
+// ABI the app targets.
+
+group = "dev.jixel.jixel_native"
+version = "1.0"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:9.0.1")
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "dev.jixel.jixel_native"
+    compileSdk = 36
+    // Use the NDK version declared by the app (android/app/build.gradle.kts).
+    ndkVersion = android.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk = 24
+    }
+}
+
+apply from: "../cargokit/gradle/plugin.gradle"
+
+cargokit {
+    manifestDir = "../../rust"
+    libname = "jixel_bridge"
+}
