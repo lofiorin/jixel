@@ -1,0 +1,14 @@
+[package]
+name = "jixel-libjxl-sys"
+description = "Hand-written, minimal FFI bindings to libjxl (the JPEG XL reference library), built from source."
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0 AND BSD-3-Clause"
+repository.workspace = true
+rust-version.workspace = true
+links = "jxl"
+# Keep the published crate small: only the parts of libjxl we compile.
+include = ["src/**", "build.rs", "libjxl/**", "!libjxl/testdata/**"]
+
+[build-dependencies]
+cmake = "0.1.54"

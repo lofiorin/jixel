@@ -1,0 +1,3 @@
+[submodule "core/crates/jixel-libjxl-sys/libjxl"]
+	path = core/crates/jixel-libjxl-sys/libjxl
+	url = https://github.com/libjxl/libjxl.git
