@@ -38,3 +38,5 @@ First version.
 ### Known issues
 - AVIF files cannot be opened (decoding not available yet).
 - Android build not yet verified with Android Gradle Plugin 9.
+- iOS is not built in CI yet. Windows and Linux are built in CI, and macOS is
+  also tested end to end; Windows and Linux have not been tried by hand.
