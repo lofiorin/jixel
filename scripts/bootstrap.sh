@@ -31,6 +31,7 @@ for tool in cargo cmake; do
     missing=1
   fi
 done
+case "$(uname -m)" in x86_64 | amd64) command -v nasm >/dev/null || warn "nasm not found: the AVIF encoder (rav1e) needs it on x86-64" ;; esac
 command -v rustup >/dev/null || warn "rustup not found: the Flutter app build needs it to add mobile targets"
 command -v flutter >/dev/null || warn "flutter not found: only the Rust core and CLI can be built"
 
