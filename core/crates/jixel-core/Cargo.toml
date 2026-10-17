@@ -14,7 +14,7 @@ webp = "0.3"
 ravif = "0.13"
 tract-onnx = { version = "0.23", optional = true }
 ssimulacra2 = "0.5"
-fast_image_resize = { version = "5", features = ["image"] }
+fast_image_resize = { version = "6", features = ["image"] }
 rayon = "1"
 thiserror.workspace = true
 serde.workspace = true
