@@ -7,6 +7,7 @@
 | git | any | submodules |
 | Rust (via **rustup**) | 1.80+ | everything |
 | CMake | 3.16+ | libjxl |
+| NASM | 2.14+ | the AVIF encoder (rav1e) on x86-64 |
 | A C/C++ compiler | Clang 14+, GCC 11+, MSVC 2022 | libjxl |
 | Flutter | 3.44+ | the app |
 | Xcode | 16+ | iOS, macOS |
@@ -15,11 +16,11 @@
 
 `rustup` matters for the app: cargokit uses it to add mobile targets
 (`aarch64-apple-ios`, `aarch64-linux-android`, …) automatically.
-On macOS with Homebrew: `brew install rustup cmake` then `rustup default stable`;
+On macOS with Homebrew: `brew install rustup cmake nasm` then `rustup default stable`;
 Homebrew's `rustup` is keg-only, so put it on your PATH:
 `export PATH="$(brew --prefix rustup)/bin:$PATH"`.
 
-Linux desktop builds also need: `sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev`.
+Linux desktop builds also need: `sudo apt install clang cmake nasm ninja-build pkg-config libgtk-3-dev`.
 
 ## First time
 

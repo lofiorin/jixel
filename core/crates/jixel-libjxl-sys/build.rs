@@ -78,12 +78,19 @@ fn main() {
     }
 
     if target_env == "msvc" {
-        // highway and libjxl are best supported by clang-cl on Windows, and we
-        // link the static CRT to match Rust's default for static libraries.
-        config
-            .generator_toolset("ClangCL")
-            .define("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded")
-            .cflag("/Zl");
+        // highway and libjxl are best supported by clang-cl on Windows. Link
+        // the same C runtime as Rust: the release DLL CRT (/MD) by default,
+        // the static one (/MT) with `+crt-static`, in every configuration.
+        let crt_static = env::var("CARGO_CFG_TARGET_FEATURE")
+            .is_ok_and(|f| f.split(',').any(|f| f == "crt-static"));
+        config.generator_toolset("ClangCL").define(
+            "CMAKE_MSVC_RUNTIME_LIBRARY",
+            if crt_static {
+                "MultiThreaded"
+            } else {
+                "MultiThreadedDLL"
+            },
+        );
     }
 
     let prefix = config.build();

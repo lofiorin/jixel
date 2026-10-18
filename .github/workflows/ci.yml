@@ -27,6 +27,7 @@ jobs:
           git submodule update --init --depth 1 core/crates/jixel-libjxl-sys/libjxl
           cd core/crates/jixel-libjxl-sys/libjxl
           git submodule update --init --depth 1 third_party/brotli third_party/highway third_party/skcms
+      - uses: ilammy/setup-nasm@v1 # rav1e (AVIF encoder) needs nasm
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -96,7 +97,8 @@ jobs:
           git submodule update --init --depth 1 third_party/brotli third_party/highway third_party/skcms
       - name: Linux dependencies
         if: matrix.target == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+        run: sudo apt-get update && sudo apt-get install -y clang cmake nasm ninja-build pkg-config libgtk-3-dev
+      - uses: ilammy/setup-nasm@v1 # rav1e (AVIF encoder) needs nasm
       - uses: dtolnay/rust-toolchain@stable
       - uses: subosito/flutter-action@v2
         with:
@@ -104,7 +106,7 @@ jobs:
           cache: true
       - name: Build
         working-directory: app
-        run: flutter build ${{ matrix.target }} --release
+        run: flutter build ${{ matrix.target }} --release --verbose
       - uses: actions/upload-artifact@v4
         with:
           name: jixel-${{ matrix.target }}

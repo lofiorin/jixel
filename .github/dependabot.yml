@@ -6,6 +6,9 @@ updates:
   - package-ecosystem: pub
     directory: /app
     schedule: { interval: monthly }
+    ignore:
+      # Pinned by flutter_localizations in the Flutter SDK; it moves with Flutter.
+      - dependency-name: intl
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }

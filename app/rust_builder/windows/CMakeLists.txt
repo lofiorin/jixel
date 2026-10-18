@@ -1,11 +1,15 @@
-# Builds ../../rust with Cargokit and bundles the resulting shared library.
+# Builds app/rust with Cargokit and bundles the resulting shared library.
 cmake_minimum_required(VERSION 3.14)
 
 set(PROJECT_NAME "jixel_native")
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 include("../cargokit/cmake/cargokit.cmake")
-apply_cargokit(${PROJECT_NAME} ../../rust jixel_bridge "")
+# Flutter reaches this folder through a symlink in flutter/ephemeral/
+# .plugin_symlinks, and "../../rust" resolves differently through it on each
+# OS. An absolute path from the app's own CMake root works everywhere.
+get_filename_component(jixel_rust_dir "${CMAKE_SOURCE_DIR}/../rust" ABSOLUTE)
+apply_cargokit(${PROJECT_NAME} "${jixel_rust_dir}" jixel_bridge "")
 
 set(
   jixel_native_bundled_libraries
