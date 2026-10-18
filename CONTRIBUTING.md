@@ -72,6 +72,24 @@ Include: platform and version, Jixel version (Settings → About), steps, what
 you expected, what happened, and — if possible — the image (or one that shows
 the same problem). For security issues see [SECURITY.md](SECURITY.md).
 
+## For maintainers: protecting `main`
+
+Two GitHub rulesets live in [.github/rulesets](.github/rulesets). GitHub only
+enforces rulesets on public repositories, or on private ones with a paid plan,
+so apply them when the repository goes public:
+
+```bash
+gh api -X POST repos/lofiorin/jixel/rulesets --input .github/rulesets/main.json
+gh api -X POST repos/lofiorin/jixel/rulesets --input .github/rulesets/main-review.json
+```
+
+- `main.json`: nobody, admins included, can delete `main` or force-push to it.
+- `main-review.json`: changes reach `main` through a pull request whose
+  "Rust core and CLI" and "Flutter analyze and test" checks are green.
+  Repository admins can bypass it, so a maintainer can still push a quick fix.
+
+Merged pull request branches are deleted automatically (a repository setting).
+
 ## Licence
 
 By contributing you agree that your contributions are licensed under the
