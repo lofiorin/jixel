@@ -21,7 +21,7 @@ jobs:
     name: Rust core and CLI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Fetch libjxl
         run: |
           git submodule update --init --depth 1 core/crates/jixel-libjxl-sys/libjxl
@@ -56,7 +56,7 @@ jobs:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -88,7 +88,7 @@ jobs:
             target: linux
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Fetch libjxl
         shell: bash
         run: |
